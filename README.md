@@ -275,6 +275,26 @@ knowledge of it.
 
 ---
 
+## x402 — pay-per-audit
+
+Lute's audit is also served as an [x402](https://github.com/coinbase/x402)-gated HTTP
+endpoint ([`src/x402-server.ts`](src/x402-server.ts)): a request without a valid
+`X-PAYMENT` header gets `HTTP 402` + payment requirements; a paid request is verified and
+settled via an x402 facilitator, then the audit runs and returns with an
+`X-PAYMENT-RESPONSE` header. Lute never moves funds — the client signs, the facilitator
+settles to `payTo`.
+
+```bash
+X402_PAY_TO=0xYourAddress X402_NETWORK=base-sepolia npm run x402   # :8789
+# POST /audit  (no payment) -> 402 { x402Version, accepts: [ { scheme:"exact", ... } ] }
+# POST /audit  (X-PAYMENT header) -> verify -> run audit -> settle -> 200 + report
+```
+
+Config via env: `X402_PAY_TO` (required), `X402_PRICE` (default `$0.01`), `X402_NETWORK`
+(`base-sepolia` default / `base`), `X402_FACILITATOR_URL`. Verified offline: requirements
+validate against the x402 schema and the 402 challenge is protocol-correct; the paid path
+needs a funded client to exercise.
+
 ## Checks implemented
 
 `event_count`, `event_presence` (bidirectional: missing + phantom), `transaction_provenance`,
