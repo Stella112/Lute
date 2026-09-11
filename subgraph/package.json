@@ -1,0 +1,19 @@
+{
+  "name": "lute-subgraph",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real Graph-protocol subgraph indexing ERC-4626 Deposit/Withdraw for the Steakhouse USDC vault on Base. Ships an honest mapping and a bugged mapping (planted entity-id bug) so the unchanged Lute verifier can be run against a real Graph Node.",
+  "scripts": {
+    "codegen": "graph codegen subgraph.honest.yaml",
+    "build:honest": "graph codegen subgraph.honest.yaml && graph build subgraph.honest.yaml",
+    "build:bugged": "graph codegen subgraph.bugged.yaml && graph build subgraph.bugged.yaml",
+    "create:honest": "graph create --node http://localhost:8020 lute/steak-honest",
+    "create:bugged": "graph create --node http://localhost:8020 lute/steak-bugged",
+    "deploy:honest": "graph deploy --node http://localhost:8020 --ipfs http://localhost:5001 --version-label v0.0.1 lute/steak-honest subgraph.honest.yaml",
+    "deploy:bugged": "graph deploy --node http://localhost:8020 --ipfs http://localhost:5001 --version-label v0.0.1 lute/steak-bugged subgraph.bugged.yaml"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.98.1",
+    "@graphprotocol/graph-ts": "0.38.0"
+  }
+}

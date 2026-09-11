@@ -1,0 +1,8 @@
+node_modules
+.git
+*.log
+subgraph
+evidence_*.json
+.github
+deploy
+test

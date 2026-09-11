@@ -12,7 +12,7 @@
     "lute": "node --import tsx src/cli.ts",
     "audit": "node --import tsx src/cli.ts audit",
     "mcp": "node --import tsx src/mcp.ts",
-    "test": "node --import tsx --test test/unit.test.ts test/negative.test.ts test/runner.test.ts test/explain.test.ts",
+    "test": "node --import tsx --test test/unit.test.ts test/negative.test.ts test/runner.test.ts test/explain.test.ts test/graphNode.test.ts",
     "watch": "node --import tsx src/cli.ts watch",
     "dashboard": "node --import tsx src/server.ts",
     "test:all": "node --import tsx --test test/*.test.ts",

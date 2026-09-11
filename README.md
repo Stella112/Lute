@@ -148,6 +148,39 @@ npm run lute -- explain --file evidence_bugged.json      # explain a saved repor
 Also exposed as the MCP tool `lute_explain(report)` and folded into the watch runner's
 `alert.target` line as a one-line `summary`. Example, from the real bugged run:
 
+<!-- phase-5-example -->
+
+## Phase 6 — Real Graph Node (self-hosted subgraph + VPS)
+
+The `local:*` sources simulate a mapping; this stage runs the real thing. Under
+[`subgraph/`](subgraph/) is an actual Graph-protocol subgraph indexing the Steakhouse
+vault's Deposit/Withdraw, in two builds:
+
+- [`src/mapping.ts`](subgraph/src/mapping.ts) — honest (id = `txHash-logIndex`)
+- [`src/mapping.bugged.ts`](subgraph/src/mapping.bugged.ts) — planted bug (id = `block.number`, so same-block events collide and one is lost)
+
+Both **compile to WASM** with `graph build` (verified locally). [`src/subgraph/graphNode.ts`](src/subgraph/graphNode.ts)
+adds a `GraphNodeSource` so Lute audits a live graph-node's GraphQL endpoint — and
+because this subgraph exposes the address fields, `field_accuracy:sender/owner/receiver`
+become VERIFIED too (they're UNVERIFIED against Morpho).
+
+```bash
+lute audit ... --subgraph graphnode:lute/steak-honest   # expect VERIFIED 75==75
+lute audit ... --subgraph graphnode:lute/steak-bugged   # expect FAILED 75 vs 74 @ 51120808
+```
+
+Standing up graph-node needs Docker, so it runs on a Linux VPS via
+[`deploy/docker-compose.yml`](deploy/docker-compose.yml) (graph-node + postgres + ipfs +
+the Lute app). Full walkthrough: [`deploy/README.md`](deploy/README.md). The **same
+unchanged verifier** should VERIFY the honest deployment and FAIL the bugged one against
+a real Graph Node — the last Phase 1 caveat closed.
+
+> ⏳ Not yet executed end-to-end: awaiting a VPS with Docker. The subgraph compiles and
+> the source/stack are in place; the live honest/bugged run on graph-node is the
+> remaining step.
+
+Example, from the real bugged `local` run (same shape the Graph Node run will produce):
+
 > Audit … — FAILED. Over Base blocks 51115000–51125000, the raw chain has 75 Deposit
 > event(s) but local-mapping://block-id reported 74. The following check(s) failed:
 > event_count and event_presence. … The earliest divergence is at block 51120808,

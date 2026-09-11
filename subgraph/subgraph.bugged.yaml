@@ -1,0 +1,27 @@
+specVersion: 1.0.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: SteakUSDC
+    network: base
+    source:
+      address: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183"
+      abi: ERC4626
+      startBlock: 51115000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - DepositEvent
+        - WithdrawEvent
+      abis:
+        - name: ERC4626
+          file: ./abis/ERC4626.json
+      eventHandlers:
+        - event: Deposit(indexed address,indexed address,uint256,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleWithdraw
+      file: ./src/mapping.bugged.ts

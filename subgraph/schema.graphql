@@ -1,0 +1,30 @@
+# One immutable entity per raw ERC-4626 event. The entity id is the canonical
+# identity Lute uses: transactionHash-logIndex. (The bugged mapping deliberately
+# derives a WRONG id — see src/mapping.bugged.ts.)
+
+type DepositEvent @entity(immutable: false) {
+  id: String!
+  blockNumber: BigInt!
+  blockHash: Bytes!
+  transactionHash: Bytes!
+  transactionIndex: Int!
+  logIndex: Int!
+  sender: Bytes!
+  owner: Bytes!
+  assets: BigInt!
+  shares: BigInt!
+}
+
+type WithdrawEvent @entity(immutable: false) {
+  id: String!
+  blockNumber: BigInt!
+  blockHash: Bytes!
+  transactionHash: Bytes!
+  transactionIndex: Int!
+  logIndex: Int!
+  sender: Bytes!
+  receiver: Bytes!
+  owner: Bytes!
+  assets: BigInt!
+  shares: BigInt!
+}
