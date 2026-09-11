@@ -1,22 +1,44 @@
-# Lute — Phase 1: Reconciler
+# Lute
 
-Independent verification of a Subgraph-class index against raw blockchain data.
+[![ci](https://github.com/Stella112/Lute/actions/workflows/ci.yml/badge.svg)](https://github.com/Stella112/Lute/actions/workflows/ci.yml)
+
+**Independent verification of a Subgraph index against raw blockchain data.**
 
 Lute reconstructs event facts **directly from Base RPC logs** and compares them to the
 **same events as reported by an independent index**. If the index's mapping is wrong,
 Lute catches it — because Lute's expected values never come from the mapping.
 
-This phase proves exactly one thing, on real data:
+Proven on real Base data against **both** a public index (Morpho) **and** a self-hosted
+**Graph Node** running real AssemblyScript mappings:
 
 ```
-HONEST:  RAW_RPC = 75   SUBGRAPH = 75   -> VERIFIED
-BUGGED:  RAW_RPC = 75   SUBGRAPH = 74   -> FAILED
-         first divergence: block 51120808
-                           tx    0x443364da3be710fc49773b87fdb5ed88805f2fe09c4fbe1dd7cd130217d82260
-                           log   496
+HONEST   RAW_RPC = 75   SUBGRAPH = 75   → VERIFIED
+BUGGED   RAW_RPC = 75   SUBGRAPH = 74   → FAILED
+         first divergence: block 51120808 · tx 0x443364da…82260 · logIndex 496
 ```
 
 Every number is discovered at runtime. None is hard-coded in the verifier.
+
+## How it works
+
+```mermaid
+flowchart LR
+  chain[("Base chain")]
+  chain -->|"eth_getLogs + ABI-decode"| RAW["RAW_RPC path<br/>(ground truth)"]
+  chain -->|"indexed by a mapping"| IDX["SUBGRAPH candidate<br/>Morpho · Graph Node · local"]
+  RAW --> REC{"Reconciler<br/>count · presence · fields<br/>provenance · duplicates"}
+  IDX --> REC
+  REC -->|"all pass"| V["VERIFIED"]
+  REC -->|"disagreement"| DIV["First-divergence<br/>range bisection"]
+  DIV --> F["FAILED<br/>block · tx · logIndex"]
+  REC -->|"infra failure"| INC["INCONCLUSIVE"]
+```
+
+The verifier reconstructs the left path from raw logs and only ever *compares* the right
+path — so a bug in the candidate's mapping cannot hide in the expected values.
+
+Surfaces over the same engine: a **CLI**, an **MCP server** (`lute_audit`), a **watchlist
+runner**, a **dashboard**, and a deterministic **plain-English** explainer.
 
 ---
 
@@ -24,7 +46,7 @@ Every number is discovered at runtime. None is hard-coded in the verifier.
 
 | | RAW_RPC (verifier / ground truth) | SUBGRAPH (candidate under audit) |
 |---|---|---|
-| code | `src/rpc.ts`, `src/abi.ts`, `src/canonical.ts` | `src/subgraph/morpho.ts` (real) · `src/subgraph/localMapping.ts` (controlled) |
+| code | `src/rpc.ts`, `src/abi.ts`, `src/canonical.ts` | `morpho.ts` (public index) · `graphNode.ts` (real Graph Node) · `localMapping.ts` (controlled) |
 | how facts are derived | `eth_getLogs` → ABI-decode the raw log | queried from an index built by someone else's mapping |
 | topic0 | `keccak256("Deposit(address,address,uint256,uint256)")`, asserted to equal the emitted topic | n/a |
 
