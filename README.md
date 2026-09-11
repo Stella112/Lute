@@ -121,10 +121,12 @@ npm run lute -- watch --config lute.targets.example.json   # add --json for mach
 ```
 
 Exit codes: `0` all VERIFIED · `2` any FAILED · `3` any INCONCLUSIVE (no FAILED). Every
-non-VERIFIED target emits a structured `alert.target` line on stderr (target, contract,
-status, first-divergence block) for a monitor to pick up. Schedule it with OS cron or
-the Claude Code `/schedule` routine — the runner is the unit of work; scheduling just
-invokes it.
+non-VERIFIED target emits a structured `alert.target` line on stderr, and if `WEBHOOK_URL`
+is set the batch **posts a summary to Slack/Discord/any webhook** (Slack/generic get
+`{text}`, Discord gets `{content}`). A target's `subgraph` can be
+`graphnode:lute/steak-honest` to watch a real Graph Node (needs `GRAPH_NODE_URL`).
+Schedule it with OS cron or the Claude Code `/schedule` routine — the runner is the unit
+of work; scheduling just invokes it.
 
 Live proof over the example watchlist (real Base data):
 

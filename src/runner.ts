@@ -54,7 +54,44 @@ export function verdictExitCode(v: Verdict): number {
   return v === "VERIFIED" ? 0 : v === "FAILED" ? 2 : 3;
 }
 
-export async function runBatch(targets: TargetSpec[], opts?: { rpc?: BaseRpc; logger?: Logger }): Promise<BatchReport> {
+/**
+ * POST a human-readable alert to a webhook for every non-VERIFIED target. Slack and
+ * generic endpoints get `{text}`; Discord (URL contains "discord") gets `{content}`.
+ * Returns false (and never throws) if there is nothing to alert or the post fails.
+ */
+export async function postAlert(
+  url: string,
+  batch: BatchReport,
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
+  const failing = batch.results.filter((r) => r.verdict !== "VERIFIED");
+  if (failing.length === 0) return false;
+  const lines = failing.map((r) => {
+    const div = r.report?.firstDivergence ? ` @ block ${r.report.firstDivergence.blockNumber}` : "";
+    const err = r.error ? ` (${r.error})` : "";
+    return `• ${r.name}: ${r.verdict}${div}${err}`;
+  });
+  const text =
+    `Lute watch — ${batch.verdict} ` +
+    `(${batch.summary.verified} verified / ${batch.summary.failed} failed / ${batch.summary.inconclusive} inconclusive)\n` +
+    lines.join("\n");
+  const payload = url.includes("discord") ? { content: text } : { text };
+  try {
+    const res = await fetchImpl(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function runBatch(
+  targets: TargetSpec[],
+  opts?: { rpc?: BaseRpc; logger?: Logger; webhookUrl?: string; fetchImpl?: typeof fetch },
+): Promise<BatchReport> {
   const runId = newRunId();
   const logger = opts?.logger ?? new Logger(runId);
   const rpc = opts?.rpc ?? resolveVerifierRpc(logger);
@@ -93,5 +130,12 @@ export async function runBatch(targets: TargetSpec[], opts?: { rpc?: BaseRpc; lo
 
   const { summary, verdict } = rollup(results);
   logger.info("batch.complete", { stage: "batch", status: verdict, ...summary });
+
+  const webhookUrl = opts?.webhookUrl ?? process.env.WEBHOOK_URL;
+  if (webhookUrl && verdict !== "VERIFIED") {
+    const ok = await postAlert(webhookUrl, { runId, ranAt: new Date().toISOString(), summary, verdict, results }, opts?.fetchImpl);
+    logger.info("alert.webhook", { stage: "batch", status: ok ? "sent" : "failed" });
+  }
+
   return { runId, ranAt: new Date().toISOString(), summary, verdict, results };
 }
