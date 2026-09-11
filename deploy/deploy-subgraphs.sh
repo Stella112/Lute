@@ -25,5 +25,5 @@ deploy_one "lute/steak-bugged" "subgraph.bugged.yaml"
 
 echo
 echo "Deployed. Watch sync with:"
-echo "  curl -s http://localhost:8000/subgraphs/name/lute/steak-honest -X POST -H 'content-type: application/json' \\"
+echo "  curl -s http://localhost:${GRAPH_QUERY_PORT:-8000}/subgraphs/name/lute/steak-honest -X POST -H 'content-type: application/json' \\"
 echo "    -d '{\"query\":\"{ _meta { block { number } } hasIndexingErrors }\"}'"

@@ -22,7 +22,7 @@ services:
     image: ipfs/kubo:v0.34.1
     restart: unless-stopped
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     volumes:
       - ipfs-data:/data/ipfs
 
@@ -32,10 +32,12 @@ services:
     depends_on:
       - postgres
       - ipfs
+    # Bound to localhost only — the admin/deploy API (8020) must never be public.
+    # GRAPH_QUERY_PORT lets you move the host-side query port off a taken 8000.
     ports:
-      - "8000:8000" # GraphQL (query)
-      - "8020:8020" # JSON-RPC (deploy)
-      - "8030:8030" # subgraph indexing status
+      - "127.0.0.1:${GRAPH_QUERY_PORT:-8000}:8000" # GraphQL (query)
+      - "127.0.0.1:8020:8020" # JSON-RPC (deploy)
+      - "127.0.0.1:8030:8030" # subgraph indexing status
     environment:
       postgres_host: postgres
       postgres_user: graph-node
@@ -55,7 +57,7 @@ services:
     depends_on:
       - graph-node
     ports:
-      - "8788:8788" # dashboard
+      - "127.0.0.1:8788:8788" # dashboard (localhost only; SSH-tunnel to view)
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000

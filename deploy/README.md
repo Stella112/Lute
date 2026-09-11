@@ -52,7 +52,7 @@ Steakhouse USDC vault from block 51,115,000). Wait for each to sync past the aud
 range (to block ≥ 51,125,000):
 
 ```bash
-curl -s http://localhost:8000/subgraphs/name/lute/steak-honest -X POST \
+curl -s http://localhost:${GRAPH_QUERY_PORT:-8000}/subgraphs/name/lute/steak-honest -X POST \
   -H 'content-type: application/json' \
   -d '{"query":"{ _meta { block { number } } hasIndexingErrors }"}'
 ```
@@ -88,7 +88,8 @@ the missing event and bisects to it. Nothing about the bug is known to the verif
 
 ## 6. (Optional) run the app services
 
-- Dashboard: already served at `http://<vps>:8788` (lock it down / put behind a proxy).
+- Dashboard is bound to **localhost only** (not public). View it via an SSH tunnel from
+  your machine: `ssh -L 8788:localhost:8788 root@<vps>`, then open `http://localhost:8788`.
 - Watch runner on a schedule (cron on the host):
   ```bash
   0 * * * * cd /path/to/Lute && docker compose -f deploy/docker-compose.yml exec -T lute \
