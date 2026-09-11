@@ -1,0 +1,174 @@
+{
+  "runId": "c141cc47-428b-4625-b084-b51319cb9c64",
+  "target": {
+    "type": "EXTERNAL_AUDIT",
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "subgraph": "http://graph-node:8000/subgraphs/name/lute/steak-bugged (depositEvents)"
+  },
+  "event": "Deposit",
+  "range": {
+    "startBlock": "51115000",
+    "endBlock": "51121000",
+    "safeHead": "51169387"
+  },
+  "verdict": "FAILED",
+  "checks": [
+    {
+      "name": "event_count",
+      "class": "STRONG",
+      "status": "FAIL",
+      "expected": {
+        "value": "49",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "48",
+        "source": "SUBGRAPH"
+      },
+      "detail": "raw=49 indexed=48"
+    },
+    {
+      "name": "duplicate_detection",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "no duplicate identities in index"
+    },
+    {
+      "name": "event_presence",
+      "class": "STRONG",
+      "status": "FAIL",
+      "expected": {
+        "value": "49",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "48",
+        "source": "SUBGRAPH"
+      },
+      "detail": "missing_from_index=1 extra_in_index=0"
+    },
+    {
+      "name": "transaction_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "every indexed record maps to a real on-chain log"
+    },
+    {
+      "name": "block_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "matched blockNumbers equal",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched of 48",
+        "source": "SUBGRAPH"
+      },
+      "detail": "48 matched blocks agree"
+    },
+    {
+      "name": "field_accuracy:sender",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "48 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    },
+    {
+      "name": "field_accuracy:owner",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "48 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    },
+    {
+      "name": "field_accuracy:assets",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "48 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    },
+    {
+      "name": "field_accuracy:shares",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "48 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    }
+  ],
+  "eventsChecked": 49,
+  "rawEvidence": {
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "topic0": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+    "startBlock": "51115000",
+    "endBlock": "51121000",
+    "rpcAlias": "BASE_RPC_VERIFIER",
+    "chunkCount": 4,
+    "eventCount": 49
+  },
+  "subgraphEvidence": {
+    "endpoint": "http://graph-node:8000/subgraphs/name/lute/steak-bugged",
+    "entity": "depositEvents",
+    "blockFilters": "blockNumber_gte=51115000, blockNumber_lte=51121000, id_gt cursor pagination",
+    "pageCount": 1,
+    "recordCount": 48
+  },
+  "firstDivergence": {
+    "blockNumber": "51120808",
+    "transactionHash": "0x443364da3be710fc49773b87fdb5ed88805f2fe09c4fbe1dd7cd130217d82260",
+    "logIndex": 496,
+    "event": "Deposit",
+    "check": "event_presence",
+    "expectedSource": "RAW_RPC",
+    "observedSource": "SUBGRAPH",
+    "raw": {
+      "sender": "0x93b63a72ce30abfa7347a12baf996b5954357ade",
+      "owner": "0x93b63a72ce30abfa7347a12baf996b5954357ade",
+      "assets": "1398492",
+      "shares": "1270371564885825448"
+    },
+    "indexed": null
+  }
+}

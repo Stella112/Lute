@@ -175,9 +175,22 @@ the Lute app). Full walkthrough: [`deploy/README.md`](deploy/README.md). The **s
 unchanged verifier** should VERIFY the honest deployment and FAIL the bugged one against
 a real Graph Node — the last Phase 1 caveat closed.
 
-> ⏳ Not yet executed end-to-end: awaiting a VPS with Docker. The subgraph compiles and
-> the source/stack are in place; the live honest/bugged run on graph-node is the
-> remaining step.
+> ✅ **Executed end-to-end on a real Graph Node** (graph-node v0.37 + postgres + ipfs on
+> a Linux VPS). Both subgraphs were deployed and indexed; the unchanged verifier was run
+> against each over `[51115000, 51121000]` (range trimmed from 51125000 only to speed
+> sync on a public RPC — the collision block is unchanged):
+>
+> ```
+> HONEST  graphnode:lute/steak-honest   RAW_RPC = 49  SUBGRAPH = 49  VERIFIED
+>         every check PASS — incl. field_accuracy:sender/owner (this subgraph exposes them)
+> BUGGED  graphnode:lute/steak-bugged   RAW_RPC = 49  SUBGRAPH = 48  FAILED
+>         first divergence: block 51120808, tx 0x443364da…82260, logIndex 496 (missing)
+> ```
+>
+> The planted `id = block.number` bug in the deployed WASM collapsed block 51,120,808's
+> two deposits into one; the independent verifier caught the missing event and bisected
+> to it. Evidence: [`evidence_graphnode_honest.json`](evidence_graphnode_honest.json),
+> [`evidence_graphnode_bugged.json`](evidence_graphnode_bugged.json).
 
 Example, from the real bugged `local` run (same shape the Graph Node run will produce):
 
