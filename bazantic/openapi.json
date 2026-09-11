@@ -1,0 +1,117 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lute Audit API",
+    "version": "0.1.0",
+    "description": "Independent verification of a Subgraph index against raw Base RPC logs. POST an ERC-4626 vault + block range and get a machine-readable reconciliation verdict (VERIFIED / FAILED / INCONCLUSIVE) with first-divergence evidence. Bazantic fronts this upstream with x402/MPP payments and exposes each operation as an MCP recipe."
+  },
+  "servers": [
+    { "url": "https://lute.example.com", "description": "Your deployed Lute audit endpoint (replace with the public HTTPS URL of src/server.ts)" }
+  ],
+  "paths": {
+    "/api/audit": {
+      "post": {
+        "operationId": "auditVault",
+        "summary": "Reconcile a Subgraph index against raw chain data",
+        "description": "Reconstructs the event set directly from Base RPC logs and compares it to the same events as reported by an index. Returns the verdict and, on disagreement, the first divergent (block, tx, logIndex).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuditRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Audit report",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditReport" } } }
+          },
+          "400": { "description": "Invalid request" }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "operationId": "listSupportedEvents",
+        "summary": "List supported ERC-4626 events",
+        "description": "Returns the events Lute can verify with their canonical signature and keccak256-derived topic0.",
+        "responses": {
+          "200": {
+            "description": "Supported events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "signature": { "type": "string" },
+                      "topic0": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditRequest": {
+        "type": "object",
+        "required": ["contract", "fromBlock", "toBlock"],
+        "properties": {
+          "contract": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "ERC-4626 vault address on Base" },
+          "event": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" },
+          "fromBlock": { "type": "integer", "description": "inclusive start block" },
+          "toBlock": { "type": "integer", "description": "inclusive end block (well behind chain head)" },
+          "subgraph": { "type": "string", "default": "morpho", "description": "morpho | graphnode:<name> | local[:bug]" }
+        }
+      },
+      "AuditReport": {
+        "type": "object",
+        "properties": {
+          "runId": { "type": "string" },
+          "event": { "type": "string" },
+          "verdict": { "type": "string", "enum": ["VERIFIED", "FAILED", "INCONCLUSIVE"] },
+          "eventsChecked": { "type": "integer" },
+          "range": {
+            "type": "object",
+            "properties": {
+              "startBlock": { "type": "string" },
+              "endBlock": { "type": "string" },
+              "safeHead": { "type": "string" }
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "status": { "type": "string", "enum": ["PASS", "FAIL", "UNVERIFIED"] },
+                "detail": { "type": "string" }
+              }
+            }
+          },
+          "rawEvidence": { "type": "object", "description": "RAW_RPC provenance (topic0, chunkCount, eventCount, rpcAlias)" },
+          "subgraphEvidence": { "type": "object", "description": "index provenance (endpoint, entity, pageCount, recordCount)" },
+          "firstDivergence": {
+            "type": ["object", "null"],
+            "properties": {
+              "blockNumber": { "type": "string" },
+              "transactionHash": { "type": "string" },
+              "logIndex": { "type": "integer" },
+              "event": { "type": "string" },
+              "check": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

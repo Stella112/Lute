@@ -19,6 +19,13 @@ import { makeSource } from "./sources.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HTML = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8");
+// OpenAPI spec (for Bazantic `--spec-url`). Optional — absent in minimal images.
+let OPENAPI: string | null = null;
+try {
+  OPENAPI = readFileSync(join(__dirname, "..", "bazantic", "openapi.json"), "utf8");
+} catch {
+  OPENAPI = null;
+}
 const PORT = Number(process.env.PORT ?? 8788);
 
 type AuditBody = {
@@ -44,6 +51,9 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     if (req.method === "GET" && url.pathname === "/") return send(res, 200, HTML, "text/html; charset=utf-8");
+    if (req.method === "GET" && url.pathname === "/openapi.json") {
+      return OPENAPI ? send(res, 200, OPENAPI) : send(res, 404, JSON.stringify({ error: "openapi spec not bundled" }));
+    }
     if (req.method === "GET" && url.pathname === "/api/events") {
       return send(res, 200, toJSON(Object.values(ERC4626_EVENTS).map((e) => ({ name: e.name, signature: e.signature, topic0: e.topic0 }))));
     }

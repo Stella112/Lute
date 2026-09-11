@@ -1,0 +1,38 @@
+# Bazantic gateway manifest for Lute (schema version 1).
+#
+# Publishes Lute's audit API as a paid AI-agent gateway: Bazantic fronts the upstream
+# with x402 / MPP payments and exposes each OpenAPI operation as a callable MCP recipe.
+#
+# NOTE: the declarative manifest is a PREVIEW format per Bazantic's docs ("you cannot yet
+# create a gateway from this file with the released CLI"). The released path is the `baz`
+# CLI in this folder's README (baz gateway add --spec-url ... --endpoint ...). This file
+# is the canonical descriptor and mirrors those flags.
+
+version: 1
+
+gateways:
+  - handle: lute-audit # 3–63 chars, globally unique — change if taken
+    listing:
+      name: Lute — Subgraph Reconciler
+      category: data
+      tagline: Independent verification of a Subgraph index against raw chain data
+      description: >
+        Reconstructs ERC-4626 vault events directly from Base RPC logs and reconciles
+        them against the same events reported by an index (Morpho, a Graph Node, or a
+        local mapping). Returns VERIFIED / FAILED / INCONCLUSIVE with first-divergence
+        evidence (block, tx, logIndex). The verifier never runs the index's mapping, so
+        a mapping bug cannot hide in the expected values.
+      tags: [subgraph, indexing, erc-4626, base, verification]
+      docs_url: https://github.com/Stella112/Lute
+      product_website: https://github.com/Stella112/Lute
+    upstream:
+      # Public HTTPS URL of the deployed Lute audit endpoint (src/server.ts).
+      url: https://lute.example.com
+      protocol: rest
+      spec:
+        type: openapi
+        url: https://lute.example.com/openapi.json # or host this file publicly
+      auth: none
+    default_price: "$0.01" # per call; Bazantic collects via x402/MPP
+    methods: unmanaged # derive callable operations from the OpenAPI spec
+    status: draft # flip to active when the upstream is public + reachable
