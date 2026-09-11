@@ -159,7 +159,8 @@ async function main(): Promise<number> {
   const logger = new Logger(runId, !quiet);
   const rpc = resolveVerifierRpc(logger);
 
-  const source = makeSource(subgraphArg, contract, eventName, rpc);
+  // CLI is a trusted operator context, so full graphnode: URLs are allowed here.
+  const source = makeSource(subgraphArg, contract, eventName, rpc, { allowRemoteGraphNodeUrl: true });
   const minConfirmations = args["min-confirmations"] ? BigInt(args["min-confirmations"]) : undefined;
 
   const report = await runAudit({ rpc, contract, eventName, fromBlock, toBlock, subgraph: source, logger, runId, minConfirmations });

@@ -99,7 +99,8 @@ export async function runBatch(
   const results: TargetResult[] = [];
   for (const t of targets) {
     try {
-      const source = makeSource(t.subgraph ?? "morpho", t.contract, t.event, rpc);
+      // Watch targets come from an operator-controlled config file, so allow full URLs.
+      const source = makeSource(t.subgraph ?? "morpho", t.contract, t.event, rpc, { allowRemoteGraphNodeUrl: true });
       const report = await runAudit({
         rpc,
         contract: t.contract,

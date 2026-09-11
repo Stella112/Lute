@@ -9,12 +9,20 @@ import { GraphNodeSource } from "./subgraph/graphNode.js";
 import { LocalMappingSource, type MappingBug } from "./subgraph/localMapping.js";
 import type { SubgraphSource } from "./subgraph/source.js";
 
-// Resolve a `graphnode:` argument to a full GraphQL endpoint. Accepts either a full
-// URL ("graphnode:http://host:8000/subgraphs/name/lute/steak-honest") or a bare
-// subgraph name ("graphnode:lute/steak-honest") joined to GRAPH_NODE_URL (default
-// http://localhost:8000).
-export function resolveGraphNodeUrl(rest: string): string {
-  if (rest.startsWith("http://") || rest.startsWith("https://")) return rest;
+// Resolve a `graphnode:` argument to a full GraphQL endpoint.
+//
+// SECURITY: a full URL in the argument gives the caller control over the host and
+// protocol of a server-side fetch (SSRF). Full URLs are therefore accepted ONLY when
+// `allowRemoteUrl` is true — reserved for the trusted CLI/env path. Network-facing
+// callers (the HTTP servers, MCP) must leave it false, so a request can only name a
+// bare subgraph that is joined to the server-configured GRAPH_NODE_URL.
+export function resolveGraphNodeUrl(rest: string, allowRemoteUrl = false): string {
+  if (rest.startsWith("http://") || rest.startsWith("https://")) {
+    if (!allowRemoteUrl) {
+      throw new Error("graphnode: full URLs are not allowed from this caller; use a bare subgraph name");
+    }
+    return rest;
+  }
   const base = process.env.GRAPH_NODE_URL ?? "http://localhost:8000";
   return `${base.replace(/\/$/, "")}/subgraphs/name/${rest}`;
 }
@@ -24,12 +32,16 @@ export function makeSource(
   contract: string,
   eventName: string,
   rpc: BaseRpc,
+  opts: { allowRemoteGraphNodeUrl?: boolean } = {},
 ): SubgraphSource {
   if (subgraph === "morpho" || subgraph.includes("api.morpho.org")) {
     return new MorphoApiSource(contract, rpc);
   }
   if (subgraph.startsWith("graphnode:")) {
-    return new GraphNodeSource(resolveGraphNodeUrl(subgraph.slice("graphnode:".length)), eventName);
+    return new GraphNodeSource(
+      resolveGraphNodeUrl(subgraph.slice("graphnode:".length), opts.allowRemoteGraphNodeUrl),
+      eventName,
+    );
   }
   if (subgraph.startsWith("local")) {
     const bug = (subgraph.split(":")[1] ?? "none") as MappingBug;

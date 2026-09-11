@@ -21,8 +21,7 @@ function entity(i: number) {
   };
 }
 
-test("resolveGraphNodeUrl: bare name vs full url vs env base", () => {
-  assert.equal(resolveGraphNodeUrl("http://h:8000/subgraphs/name/lute/x"), "http://h:8000/subgraphs/name/lute/x");
+test("resolveGraphNodeUrl: bare name joins env base", () => {
   const prev = process.env.GRAPH_NODE_URL;
   delete process.env.GRAPH_NODE_URL;
   assert.equal(resolveGraphNodeUrl("lute/steak-honest"), "http://localhost:8000/subgraphs/name/lute/steak-honest");
@@ -30,6 +29,14 @@ test("resolveGraphNodeUrl: bare name vs full url vs env base", () => {
   assert.equal(resolveGraphNodeUrl("lute/steak-honest"), "http://vps:8000/subgraphs/name/lute/steak-honest");
   if (prev === undefined) delete process.env.GRAPH_NODE_URL;
   else process.env.GRAPH_NODE_URL = prev;
+});
+
+test("resolveGraphNodeUrl: full URLs blocked unless explicitly allowed (SSRF guard)", () => {
+  // network-facing default: reject attacker-controlled host/protocol
+  assert.throws(() => resolveGraphNodeUrl("http://169.254.169.254/latest/meta-data/"), /not allowed/);
+  assert.throws(() => resolveGraphNodeUrl("https://evil.example/x"), /not allowed/);
+  // trusted CLI/watch path may opt in
+  assert.equal(resolveGraphNodeUrl("http://h:8000/subgraphs/name/lute/x", true), "http://h:8000/subgraphs/name/lute/x");
 });
 
 test("GraphNodeSource paginates via id_gt cursor and normalizes fields", async () => {

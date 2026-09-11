@@ -105,8 +105,11 @@ async function handleAudit(req: IncomingMessage, res: ServerResponse, resource: 
 
   // Payment verified — run the audit.
   const body = JSON.parse((await readBody(req)) || "{}") as AuditBody;
-  if (!body.contract || body.fromBlock === undefined || body.toBlock === undefined) {
-    return send(res, 400, { error: "contract, fromBlock and toBlock are required" });
+  if (!body.contract || !/^0x[0-9a-fA-F]{40}$/.test(body.contract)) {
+    return send(res, 400, { error: "a valid contract address is required" });
+  }
+  if (body.fromBlock === undefined || body.toBlock === undefined) {
+    return send(res, 400, { error: "fromBlock and toBlock are required" });
   }
   const runId = newRunId();
   const logger = new Logger(runId);
