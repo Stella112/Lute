@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lute — Reconciliation Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1216; --panel: #171b21; --panel2: #1e242c; --line: #2a323c;
+    --fg: #e6edf3; --muted: #93a1b0; --accent: #6ea8fe;
+    --pass: #3fb950; --fail: #f85149; --warn: #d29922; --unv: #6e7681;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f6f8fa; --panel:#fff; --panel2:#f0f3f6; --line:#d0d7de; --fg:#1f2328; --muted:#57606a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header { padding:20px 24px; border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:18px; letter-spacing:.3px; }
+  h1 span { color:var(--muted); font-weight:400; }
+  .wrap { max-width:960px; margin:0 auto; padding:24px; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px; }
+  input, select { width:100%; padding:8px 10px; background:var(--panel2); border:1px solid var(--line); color:var(--fg); border-radius:6px; font:inherit; }
+  input[type=text] { font-family:var(--mono); }
+  .row { margin-bottom:14px; }
+  button { margin-top:6px; padding:10px 18px; background:var(--accent); color:#08131f; border:0; border-radius:6px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:progress; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-top:16px; }
+  .verdict { display:inline-flex; align-items:center; gap:10px; font-size:22px; font-weight:700; }
+  .dot { width:12px; height:12px; border-radius:50%; }
+  .v-VERIFIED { color:var(--pass); } .v-VERIFIED .dot{ background:var(--pass);}
+  .v-FAILED { color:var(--fail); } .v-FAILED .dot{ background:var(--fail);}
+  .v-INCONCLUSIVE { color:var(--warn); } .v-INCONCLUSIVE .dot{ background:var(--warn);}
+  .counts { display:flex; gap:28px; margin:12px 0; }
+  .counts b { font-size:26px; display:block; font-family:var(--mono); }
+  .counts small { color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-size:11px; }
+  table { width:100%; border-collapse:collapse; margin-top:6px; }
+  td { padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.name { font-family:var(--mono); color:var(--fg); white-space:nowrap; }
+  .st { font-weight:700; font-family:var(--mono); }
+  .st.PASS{color:var(--pass);} .st.FAIL{color:var(--fail);} .st.UNVERIFIED{color:var(--unv);}
+  td.detail { color:var(--muted); font-size:12px; }
+  .mono { font-family:var(--mono); word-break:break-all; }
+  .kv { display:grid; grid-template-columns:150px 1fr; gap:4px 12px; font-size:13px; }
+  .kv div:nth-child(odd){ color:var(--muted); }
+  .diverge { border-color:var(--fail); }
+  .muted { color:var(--muted); }
+  .hint { color:var(--muted); font-size:12px; margin-top:4px; }
+  .err { color:var(--fail); }
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding:0"><h1>Lute <span>· independent reconciliation of a Subgraph index vs raw Base RPC</span></h1></div></header>
+<div class="wrap">
+  <div class="panel">
+    <div class="grid">
+      <div class="row"><label>Vault contract (Base, ERC-4626)</label><input type="text" id="contract" value="0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183" /></div>
+      <div class="row"><label>Event</label><select id="event"><option>Deposit</option><option>Withdraw</option></select></div>
+      <div class="row"><label>From block</label><input type="text" id="fromBlock" value="51115000" /></div>
+      <div class="row"><label>To block</label><input type="text" id="toBlock" value="51125000" /></div>
+      <div class="row"><label>Index (candidate)</label>
+        <select id="subgraph">
+          <option value="morpho">morpho — real public index (honest)</option>
+          <option value="local:none">local:none — faithful mapping</option>
+          <option value="local:block-id">local:block-id — planted entity-id bug</option>
+          <option value="local:swap-fields">local:swap-fields — assets/shares swapped</option>
+          <option value="local:duplicate">local:duplicate — duplicate entity</option>
+        </select>
+      </div>
+      <div class="row" style="align-self:end"><button id="run">Run audit</button></div>
+    </div>
+    <div class="hint">Verifier decodes raw <span class="mono">eth_getLogs</span> independently; the index is only compared, never trusted. Ranges should sit well behind chain head.</div>
+  </div>
+  <div id="out"></div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+async function run() {
+  const btn = $('run'); btn.disabled = true; btn.textContent = 'Auditing…';
+  $('out').innerHTML = '<div class="panel muted">Reading raw logs + querying index…</div>';
+  try {
+    const body = { contract: $('contract').value.trim(), event: $('event').value, fromBlock: $('fromBlock').value.trim(), toBlock: $('toBlock').value.trim(), subgraph: $('subgraph').value };
+    const res = await fetch('/api/audit', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body) });
+    const r = await res.json();
+    if (!res.ok) { $('out').innerHTML = '<div class="panel err">Error: ' + esc(r.error||res.status) + '</div>'; return; }
+    render(r);
+  } catch (e) {
+    $('out').innerHTML = '<div class="panel err">Error: ' + esc(e.message) + '</div>';
+  } finally { btn.disabled = false; btn.textContent = 'Run audit'; }
+}
+
+function render(r) {
+  const raw = r.rawEvidence, sub = r.subgraphEvidence;
+  let h = '';
+  h += '<div class="panel">';
+  h += '<div class="verdict v-'+r.verdict+'"><span class="dot"></span>'+r.verdict+'</div>';
+  if (r.inconclusiveReason) h += '<div class="hint">'+esc(r.inconclusiveReason)+'</div>';
+  h += '<div class="counts">';
+  h += '<div><b>'+ (raw? raw.eventCount : '—') +'</b><small>RAW_RPC events</small></div>';
+  h += '<div><b>'+ (sub? sub.recordCount : '—') +'</b><small>SUBGRAPH events</small></div>';
+  h += '<div><b>'+ r.eventsChecked +'</b><small>events checked</small></div>';
+  h += '</div></div>';
+
+  if (r.checks && r.checks.length) {
+    h += '<div class="panel"><label>Checks</label><table>';
+    for (const c of r.checks) h += '<tr><td class="name">'+esc(c.name)+'</td><td class="st '+c.status+'">'+c.status+'</td><td class="detail">'+esc(c.detail||'')+'</td></tr>';
+    h += '</table></div>';
+  }
+
+  if (r.firstDivergence) {
+    const d = r.firstDivergence;
+    h += '<div class="panel diverge"><label>First divergence (discovered by range bisection)</label><div class="kv">';
+    h += '<div>Block</div><div class="mono">'+esc(d.blockNumber)+'</div>';
+    h += '<div>Transaction</div><div class="mono">'+esc(d.transactionHash)+'</div>';
+    h += '<div>Log index</div><div class="mono">'+esc(d.logIndex)+'</div>';
+    h += '<div>Event</div><div>'+esc(d.event)+'</div>';
+    h += '<div>Failed check</div><div class="mono">'+esc(d.check)+'</div>';
+    h += '<div>RAW_RPC</div><div class="mono">'+esc(d.raw?JSON.stringify(d.raw):'(missing)')+'</div>';
+    h += '<div>SUBGRAPH</div><div class="mono">'+esc(d.indexed?JSON.stringify(d.indexed):'(missing)')+'</div>';
+    h += '</div></div>';
+  }
+
+  h += '<div class="panel"><label>Provenance</label><div class="kv">';
+  h += '<div>Network / vault</div><div class="mono">'+esc(r.target.network)+' · '+esc(r.target.contract)+'</div>';
+  h += '<div>Range</div><div class="mono">'+esc(r.range.startBlock)+' → '+esc(r.range.endBlock)+' (safe head '+esc(r.range.safeHead)+')</div>';
+  if (raw) { h += '<div>RAW source</div><div class="mono">'+esc(raw.rpcAlias)+' · topic0 '+esc(raw.topic0)+' · '+raw.chunkCount+' chunks</div>'; }
+  if (sub) { h += '<div>Index source</div><div class="mono">'+esc(sub.endpoint)+' · '+esc(sub.entity)+' · '+sub.pageCount+' pages</div>'; }
+  h += '<div>Run id</div><div class="mono">'+esc(r.runId)+'</div>';
+  h += '</div></div>';
+
+  $('out').innerHTML = h;
+}
+$('run').addEventListener('click', run);
+</script>
+</body>
+</html>

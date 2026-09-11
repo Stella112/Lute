@@ -1,0 +1,160 @@
+{
+  "runId": "63cd4364-3a9d-4610-ad82-713ac30ea352",
+  "target": {
+    "type": "EXTERNAL_AUDIT",
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "subgraph": "local-mapping://block-id (VaultEvent (local mapping))"
+  },
+  "event": "Deposit",
+  "range": {
+    "startBlock": "51115000",
+    "endBlock": "51125000",
+    "safeHead": "51142375"
+  },
+  "verdict": "FAILED",
+  "checks": [
+    {
+      "name": "event_count",
+      "class": "STRONG",
+      "status": "FAIL",
+      "expected": {
+        "value": "75",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "74",
+        "source": "SUBGRAPH"
+      },
+      "detail": "raw=75 indexed=74"
+    },
+    {
+      "name": "duplicate_detection",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "no duplicate identities in index"
+    },
+    {
+      "name": "event_presence",
+      "class": "STRONG",
+      "status": "FAIL",
+      "expected": {
+        "value": "75",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "74",
+        "source": "SUBGRAPH"
+      },
+      "detail": "missing_from_index=1 extra_in_index=0"
+    },
+    {
+      "name": "transaction_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "every indexed record maps to a real on-chain log"
+    },
+    {
+      "name": "block_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "matched blockNumbers equal",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched of 74",
+        "source": "SUBGRAPH"
+      },
+      "detail": "74 matched blocks agree"
+    },
+    {
+      "name": "field_accuracy:sender",
+      "class": "STRONG",
+      "status": "UNVERIFIED",
+      "detail": "index does not expose \"sender\""
+    },
+    {
+      "name": "field_accuracy:owner",
+      "class": "STRONG",
+      "status": "UNVERIFIED",
+      "detail": "index does not expose \"owner\""
+    },
+    {
+      "name": "field_accuracy:assets",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "74 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    },
+    {
+      "name": "field_accuracy:shares",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "74 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    }
+  ],
+  "eventsChecked": 75,
+  "rawEvidence": {
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "topic0": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+    "startBlock": "51115000",
+    "endBlock": "51125000",
+    "rpcAlias": "BASE_RPC_VERIFIER",
+    "chunkCount": 6,
+    "eventCount": 75
+  },
+  "subgraphEvidence": {
+    "endpoint": "local-mapping://block-id",
+    "entity": "VaultEvent (local mapping)",
+    "blockFilters": "local mapping over raw logs, blockNumber in [51115000, 51125000], bug=block-id",
+    "pageCount": 1,
+    "recordCount": 74
+  },
+  "firstDivergence": {
+    "blockNumber": "51120808",
+    "transactionHash": "0x443364da3be710fc49773b87fdb5ed88805f2fe09c4fbe1dd7cd130217d82260",
+    "logIndex": 496,
+    "event": "Deposit",
+    "check": "event_presence",
+    "expectedSource": "RAW_RPC",
+    "observedSource": "SUBGRAPH",
+    "raw": {
+      "sender": "0x93b63a72ce30abfa7347a12baf996b5954357ade",
+      "owner": "0x93b63a72ce30abfa7347a12baf996b5954357ade",
+      "assets": "1398492",
+      "shares": "1270371564885825448"
+    },
+    "indexed": null
+  }
+}

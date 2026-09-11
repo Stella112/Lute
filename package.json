@@ -1,0 +1,37 @@
+{
+  "name": "lute",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lute Phase 1 — deterministic reconciler that independently verifies Subgraph-indexed ERC-4626 vault events against raw Base RPC logs.",
+  "bin": {
+    "lute": "src/cli.ts",
+    "lute-mcp": "src/mcp.ts"
+  },
+  "scripts": {
+    "lute": "node --import tsx src/cli.ts",
+    "audit": "node --import tsx src/cli.ts audit",
+    "mcp": "node --import tsx src/mcp.ts",
+    "test": "node --import tsx --test test/unit.test.ts test/negative.test.ts test/runner.test.ts test/explain.test.ts",
+    "watch": "node --import tsx src/cli.ts watch",
+    "dashboard": "node --import tsx src/server.ts",
+    "test:all": "node --import tsx --test test/*.test.ts",
+    "test:live": "node --import tsx --test test/live.test.ts",
+    "test:bugged": "node --import tsx --test test/bugged.test.ts",
+    "test:mcp": "node --import tsx --test test/mcp.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "js-sha3": "0.9.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  },
+  "allowScripts": {
+    "esbuild@0.23.1": true
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "runId": "bac90bbf-2d96-4317-80c0-0a68c17462a3",
+  "target": {
+    "type": "EXTERNAL_AUDIT",
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "subgraph": "https://api.morpho.org/graphql (vaultV1Transactions)"
+  },
+  "event": "Deposit",
+  "range": {
+    "startBlock": "51115000",
+    "endBlock": "51125000",
+    "safeHead": "51142371"
+  },
+  "verdict": "VERIFIED",
+  "checks": [
+    {
+      "name": "event_count",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "75",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "75",
+        "source": "SUBGRAPH"
+      },
+      "detail": "raw=75 indexed=75"
+    },
+    {
+      "name": "duplicate_detection",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "no duplicate identities in index"
+    },
+    {
+      "name": "event_presence",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "75",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "75",
+        "source": "SUBGRAPH"
+      },
+      "detail": "missing_from_index=0 extra_in_index=0"
+    },
+    {
+      "name": "transaction_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "0",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0",
+        "source": "SUBGRAPH"
+      },
+      "detail": "every indexed record maps to a real on-chain log"
+    },
+    {
+      "name": "block_provenance",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "matched blockNumbers equal",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched of 75",
+        "source": "SUBGRAPH"
+      },
+      "detail": "75 matched blocks agree"
+    },
+    {
+      "name": "field_accuracy:sender",
+      "class": "STRONG",
+      "status": "UNVERIFIED",
+      "detail": "index does not expose \"sender\""
+    },
+    {
+      "name": "field_accuracy:owner",
+      "class": "STRONG",
+      "status": "UNVERIFIED",
+      "detail": "index does not expose \"owner\""
+    },
+    {
+      "name": "field_accuracy:assets",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "75 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    },
+    {
+      "name": "field_accuracy:shares",
+      "class": "STRONG",
+      "status": "PASS",
+      "expected": {
+        "value": "75 values match",
+        "source": "RAW_RPC"
+      },
+      "observed": {
+        "value": "0 mismatched",
+        "source": "SUBGRAPH"
+      }
+    }
+  ],
+  "eventsChecked": 75,
+  "rawEvidence": {
+    "network": "base",
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "topic0": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+    "startBlock": "51115000",
+    "endBlock": "51125000",
+    "rpcAlias": "BASE_RPC_VERIFIER",
+    "chunkCount": 6,
+    "eventCount": 75
+  },
+  "subgraphEvidence": {
+    "endpoint": "https://api.morpho.org/graphql",
+    "entity": "vaultV1Transactions",
+    "blockFilters": "timestamp_gte=1789019287, timestamp_lte=1789039407 (margin 60s), post-filter blockNumber in [51115000, 51125000]",
+    "pageCount": 1,
+    "recordCount": 75
+  },
+  "firstDivergence": null
+}

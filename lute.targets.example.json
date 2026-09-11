@@ -1,0 +1,32 @@
+{
+  "_comment": "Watchlist for `lute watch --config lute.targets.example.json`. Each target is audited independently and rolled up to one batch verdict (exit 0 VERIFIED / 2 FAILED / 3 INCONCLUSIVE). The last target intentionally uses a bugged local mapping to demonstrate alerting.",
+  "targets": [
+    {
+      "name": "steak-usdc-deposits",
+      "network": "base",
+      "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+      "event": "Deposit",
+      "fromBlock": 51115000,
+      "toBlock": 51125000,
+      "subgraph": "morpho"
+    },
+    {
+      "name": "steak-usdc-withdraws",
+      "network": "base",
+      "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+      "event": "Withdraw",
+      "fromBlock": 51100000,
+      "toBlock": 51110000,
+      "subgraph": "morpho"
+    },
+    {
+      "name": "steak-usdc-deposits-BUGGED-mapping",
+      "network": "base",
+      "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+      "event": "Deposit",
+      "fromBlock": 51115000,
+      "toBlock": 51125000,
+      "subgraph": "local:block-id"
+    }
+  ]
+}

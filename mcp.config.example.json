@@ -1,0 +1,12 @@
+{
+  "_comment": "Register the Lute reconciler as an MCP server. For Claude Code, put this under the 'mcpServers' key of .mcp.json / your MCP client config. Replace <ABS_PATH> with the absolute path to this repo. Optionally set BASE_RPC_VERIFIER to a private archive RPC (only the alias is logged).",
+  "mcpServers": {
+    "lute": {
+      "command": "node",
+      "args": ["--import", "tsx", "<ABS_PATH>/src/mcp.ts"],
+      "env": {
+        "BASE_RPC_VERIFIER": "https://mainnet.base.org"
+      }
+    }
+  }
+}

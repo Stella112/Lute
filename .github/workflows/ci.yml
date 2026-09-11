@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Offline tests (unit + negative + rollup + explain)
+        run: npm test
+    # NOTE: the live tests (test:live, test:bugged, test:mcp, runner.live) hit real
+    # Base RPC + the Morpho index and are intentionally NOT run here. Run them locally
+    # with `npm run test:all`, or add a scheduled job with a reliable archive RPC in
+    # BASE_RPC_VERIFIER.
