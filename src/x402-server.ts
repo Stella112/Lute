@@ -122,8 +122,15 @@ async function handleAudit(req: IncomingMessage, res: ServerResponse, resource: 
     logger, runId,
   });
 
-  // Settle the payment and return the result.
+  // Settle the payment and ONLY release the report if settlement actually succeeded.
+  // verify() proves the authorization was valid at that instant; settle() is what
+  // collects funds on-chain. Returning the report on a failed settle (e.g. the payer
+  // drained the balance during the audit, or N concurrent requests reused one
+  // authorization and only one nonce settles) would hand out unpaid audits.
   const settlement = await facilitator.settle(payment, selected);
+  if (!settlement.success) {
+    return require402(res, `payment settlement failed: ${settlement.errorReason ?? "unknown"}`, requirements);
+  }
   send(res, 200, toJSON(report), { "X-PAYMENT-RESPONSE": settleResponseHeader(settlement) });
 }
 
