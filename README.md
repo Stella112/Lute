@@ -297,6 +297,23 @@ Config via env: `X402_PAY_TO` (required), `X402_PRICE` (default `$0.01`), `X402_
 validate against the x402 schema and the 402 challenge is protocol-correct; the paid path
 needs a funded client to exercise.
 
+## Hedera attestations
+
+Each verdict can be published to **Hedera Consensus Service** as an immutable, timestamped
+attestation ([`src/hedera.ts`](src/hedera.ts)) — a compact `{verdict, contract, event,
+range, counts, firstDivergence, runId, ts}` message on an HCS topic.
+
+```bash
+# credentials in .env (gitignored): HEDERA_OPERATOR_ID, HEDERA_OPERATOR_KEY, HEDERA_NETWORK
+node --env-file=.env --import tsx src/cli.ts audit --contract 0x... --event Deposit \
+  --from-block N --to-block N --attest          # audit, then attest the verdict
+node --env-file=.env --import tsx src/cli.ts attest --file report.json   # attest a saved report
+```
+
+Returns the topic id, sequence number, transaction id, and a HashScan link. The payload
+builder is offline-tested; the live HCS submit needs a (free) testnet operator account —
+Lute never logs the key.
+
 ## Checks implemented
 
 `event_count`, `event_presence` (bidirectional: missing + phantom), `transaction_provenance`,

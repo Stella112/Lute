@@ -18,6 +18,7 @@ import { resolveVerifierRpc } from "./rpc.js";
 import { makeSource } from "./sources.js";
 import { runBatch, verdictExitCode, type BatchReport, type TargetSpec } from "./runner.js";
 import { explainReport } from "./explain.js";
+import { publishAttestation, isHederaConfigured } from "./hedera.js";
 import type { AuditReport, CheckResult } from "./types.js";
 import { toJSON } from "./bigint.js";
 
@@ -121,13 +122,24 @@ function runExplain(rest: string[]): number {
   return verdictExitCode(report.verdict);
 }
 
+async function runAttest(rest: string[]): Promise<number> {
+  const args = parseArgs(rest);
+  if (!args.file) throw new Error("--file <report.json> is required for attest");
+  const report = JSON.parse(readFileSync(args.file, "utf8")) as AuditReport;
+  if (!isHederaConfigured()) throw new Error("Hedera not configured: set HEDERA_OPERATOR_ID/KEY (see .env)");
+  const att = await publishAttestation(report);
+  process.stdout.write(`HEDERA ATTESTATION\n  topic:       ${att.topicId}\n  sequence:    ${att.sequenceNumber}\n  transaction: ${att.transactionId}\n  hashscan:    ${att.hashscan}\n`);
+  return 0;
+}
+
 async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
   if (cmd === "watch") return runWatch(rest);
   if (cmd === "explain") return runExplain(rest);
+  if (cmd === "attest") return runAttest(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute audit --network base --contract 0x.. --subgraph <morpho|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain]\n  lute watch --config <targets.json> [--json]\n  lute explain --file <report.json>\n",
+      "usage:\n  lute audit --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute watch --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }
@@ -156,6 +168,15 @@ async function main(): Promise<number> {
   else printHuman(report);
 
   if (args.explain === "true") process.stdout.write("\n" + explainReport(report) + "\n");
+
+  if (args.attest === "true") {
+    if (!isHederaConfigured()) {
+      process.stderr.write("lute: --attest set but Hedera not configured (set HEDERA_OPERATOR_ID/KEY in .env)\n");
+    } else {
+      const att = await publishAttestation(report);
+      process.stdout.write(`\nHEDERA ATTESTATION\n  topic:       ${att.topicId}\n  sequence:    ${att.sequenceNumber}\n  transaction: ${att.transactionId}\n  hashscan:    ${att.hashscan}\n`);
+    }
+  }
 
   return verdictExitCode(report.verdict);
 }
