@@ -28,8 +28,8 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Multiple fault injections fail; same verifier | 🟡 partial — one planted bug (block-id) + swap/duplicate variants; not a full corpus | `src/subgraph/localMapping.ts`, subgraph `mapping.bugged.ts` |
 | Candidate hashing + stale invalidation | ✅ deterministic manifest/hash + tests | `src/candidate.ts`, `test/candidate.test.ts` |
 | Deployment gate blocks bad/stale | ✅ pure backend decision + CLI gate; no persistent deployment service yet | `src/gate.ts`, `src/cli.ts`, `test/gate.test.ts` |
-| Build workflow (NL → scaffold → deploy) | ❌ not built (Graph skills not wired into a build pipeline) | — |
-| Repair workflow + reverification | 🟡 conceptual — bugged/honest mappings exist; no RepairContext pipeline | — |
+| Build workflow (NL → scaffold → deploy) | 🟡 supported Base ERC-4626 intent now scaffolds, validates, optionally codegens/builds, and hashes; verification/gate/deploy remain explicit | `src/build.ts`, `src/cli.ts` |
+| Repair workflow + reverification | 🟡 deterministic RepairContext + opt-in known identity fix; fresh verification/gate remain explicit | `src/repair.ts`, `src/cli.ts` |
 | Deploy exact verified candidate to Studio + smoke query | ✅ honest `v0.1.0` deployed to Graph Studio on Base; live `_meta` and `DepositEvent` queries verified | `deploy/`, `subgraph/` |
 | External Audit for a supported deployment | ✅ (real, via UI + backend) | `web/.../ExternalAudit.tsx`, `/api/audit` |
 | Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
@@ -48,7 +48,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 ## Biggest gaps to close for the contract (priority)
 1. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
 2. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
-3. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
+3. **Broaden Build + Repair beyond the first ERC-4626 workflow and wire current Graph skills** — §10/11/27/29.
 4. **Bazantic live Gateway + Recipe** — §22/53/54.
 5. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
 6. `openapi/lute.yaml` alignment and the remaining architecture docs.

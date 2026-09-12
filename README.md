@@ -385,3 +385,22 @@ implemented. The honest Lute subgraph is deployed to Graph Studio on Base and ha
 smoke-queried successfully. AI build/repair orchestration, continuous incident
 persistence, and a recorded real paid Hedera request remain separate demo/production
 work and must not be presented as complete until their evidence is collected.
+
+## Build and repair workflow
+
+The first supported build intent is a Base ERC-4626 vault. Lute creates a fresh
+candidate from the reviewed honest template, validates its manifest, optionally runs
+Graph codegen/build, and computes the candidate hash. It does not self-verify or deploy:
+those steps remain explicit and are bound by the deployment gate.
+
+```bash
+npm run lute -- build \
+  --intent "Build an ERC-4626 indexer on Base for 0x1234567890123456789012345678901234567890" \
+  --start-block 51115000 \
+  --output .lute/builds/vault
+```
+
+Use `--compile false` when Graph CLI is unavailable. After a failed VerificationRun,
+produce deterministic repair instructions with `lute repair --file <run.json>`. The
+optional `--apply-known-fix` only applies the narrow ERC-4626 non-unique entity-id fix;
+the candidate must then be rehashed and reverified by the unchanged verifier.

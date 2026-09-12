@@ -24,6 +24,8 @@ import { decideGate } from "./gate.js";
 import type { AuditReport, CheckResult } from "./types.js";
 import { toJSON } from "./bigint.js";
 import { evidenceRoot } from "./evidence.js";
+import { buildErc4626 } from "./build.js";
+import { applyKnownErc4626Repair, createRepairContext } from "./repair.js";
 import {
   createVerificationRun,
   freshnessFor,
@@ -142,6 +144,43 @@ async function runAttest(rest: string[]): Promise<number> {
   return 0;
 }
 
+async function runBuild(rest: string[]): Promise<number> {
+  const args = parseArgs(rest);
+  const intent = args.intent;
+  if (!intent) throw new Error('--intent "Build an ERC-4626 indexer on Base for 0x..." is required');
+  if (!args["start-block"]) throw new Error("--start-block <N> is required so the candidate has an explicit historical boundary");
+  const output = args.output ?? `.lute/builds/${newRunId()}`;
+  const result = await buildErc4626({
+    intent,
+    contract: args.contract,
+    startBlock: args["start-block"],
+    outputDir: output,
+    templateDir: args.template,
+    compile: args.compile !== "false",
+    graphCommand: args["graph-command"],
+  });
+  if (args.json === "true") process.stdout.write(toJSON(result) + "\n");
+  else process.stdout.write(["LUTE BUILD", "", `Candidate: ${result.candidateDir}`, `Contract:  ${result.contract}`, `Start:     ${result.startBlock}`, `Hash:      ${result.candidate.candidateHash}`, "", ...result.stages.map((stage) => `${stage.status.padEnd(7)} ${stage.name}: ${stage.detail}`), "", "Next: run the unchanged verifier, then lute gate before any deploy."].join("\n") + "\n");
+  return 0;
+}
+
+function runRepair(rest: string[]): number {
+  const args = parseArgs(rest);
+  if (!args.file) throw new Error("--file <VerificationRun.json> is required for repair");
+  const run = loadVerificationRun(args.file);
+  const context = createRepairContext(run);
+  if (args["apply-known-fix"] === "true") {
+    if (run.verdict !== "FAILED") throw new Error("known repair may only be applied to a FAILED VerificationRun");
+    const candidateDir = args.candidate ?? run.candidate.root;
+    const applied = applyKnownErc4626Repair(candidateDir);
+    if (!applied.changed) throw new Error(`known ERC-4626 identity repair did not match ${applied.file}`);
+    context.recommendedActions.unshift(`Applied known identity repair to ${applied.file}; candidate hash must be recomputed and reverified.`);
+  }
+  if (args.json === "true") process.stdout.write(toJSON(context) + "\n");
+  else process.stdout.write(["LUTE REPAIR CONTEXT", "", `Run:          ${context.runId}`, `Candidate:    ${context.candidateHash}`, `Failed:       ${context.failedChecks.join(", ") || "none"}`, `Files:        ${context.relevantFiles.join(", ") || "none"}`, "", ...context.recommendedActions.map((action) => `- ${action}`)].join("\n") + "\n");
+  return 0;
+}
+
 async function runGate(rest: string[]): Promise<number> {
   const args = parseArgs(rest);
   const candidateDir = args.candidate ?? "subgraph";
@@ -213,6 +252,8 @@ async function runVerify(rest: string[]): Promise<number> {
 
 async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
+  if (cmd === "build") return runBuild(rest);
+  if (cmd === "repair") return runRepair(rest);
   if (cmd === "watch") return runWatch(rest);
   if (cmd === "verify") return runVerify(rest);
   if (cmd === "explain") return runExplain(rest);
@@ -220,7 +261,7 @@ async function main(): Promise<number> {
   if (cmd === "gate") return runGate(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|substreams|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
+      "usage:\n  lute build  --intent \"Build an ERC-4626 indexer on Base for 0x..\" --start-block N --output <dir> [--compile false] [--json]\n  lute repair --file <VerificationRun.json> [--candidate <dir>] [--apply-known-fix] [--json]\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|substreams|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }
