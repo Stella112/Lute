@@ -4,7 +4,7 @@ import test from "node:test";
 import { normalizeSubstreamsEvents } from "../src/subgraph/substreams.js";
 
 const b64 = (hex: string) => Buffer.from(hex.replace(/^0x/, ""), "hex").toString("base64");
-const contract = "0xbeeF010f9cb27031ad51e3333f9aE9C6B1228183";
+const contract = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
 const sender = "0x1111111111111111111111111111111111111111";
 const owner = "0x2222222222222222222222222222222222222222";
 
