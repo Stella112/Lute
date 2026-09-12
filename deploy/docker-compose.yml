@@ -67,6 +67,7 @@ services:
       SUBSTREAMS_ENDPOINT: ${SUBSTREAMS_ENDPOINT:-https://base.substreams.pinax.network:443}
       SUBSTREAMS_PACKAGE: ${SUBSTREAMS_PACKAGE:-https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg}
       SUBSTREAMS_MODULE: ${SUBSTREAMS_MODULE:-map_events}
+      LUTE_VERIFIER_COMMIT: ${LUTE_VERIFIER_COMMIT:-unknown}
       PORT: "8788"
 
   lute-paid:
