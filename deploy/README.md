@@ -1,5 +1,10 @@
 # Lute on a VPS — real Graph Node + app
 
+The public Lute origin is `https://uselute.xyz`. Keep the Lute dashboard and paid
+service bound to localhost, and add the site block from
+[`Caddyfile.uselute.example`](Caddyfile.uselute.example) in front of them. Do not
+reuse a Qevor domain or replace unrelated Caddy sites on a shared VPS.
+
 This stands up a **real Graph Node**, deploys the Lute subgraph (an honest build and a
 build with a planted mapping bug), and runs the *unchanged* Lute verifier against both —
 closing Phase 1's last caveat (the candidate index becomes a real Graph-protocol
@@ -40,6 +45,13 @@ docker compose -f deploy/docker-compose.yml logs -f graph-node   # watch it star
 
 Services: `graph-node` (GraphQL :8000, deploy :8020, status :8030), `ipfs` (:5001),
 `postgres`, and `lute` (dashboard :8788).
+
+The optional `lute-paid` service is in the `paid` profile. Start it only after
+setting the Hedera/Blocky402 values in `deploy/.env`:
+
+```bash
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env --profile paid up -d --build lute-paid
+```
 
 ## 4. Deploy both subgraphs
 

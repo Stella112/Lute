@@ -16,7 +16,7 @@ How Lute satisfies it:
 - The Graph is load-bearing: Lute audits/verifies Graph subgraphs; without The Graph the product changes fundamentally.
 - Live Graph data: `GraphNodeSource` queries a real deployed subgraph (Studio + self-hosted graph-node); Morpho public index as a second source.
 - Meaningful work: independent verification, first-divergence, deployment gate, repair — automated decisions, not chat.
-- Reusable: Integrity Pack standard + (planned) reusable ERC-4626 Substreams module.
+- Reusable: ERC-4626 Integrity Pack work is present; the reusable Substreams module remains planned and is not claimed as complete.
 
 ### Best Use of Composable or Standardized Graph Products ($5,000)
 Requirements:
@@ -25,7 +25,7 @@ Requirements:
 - Simply querying one subgraph does **not** qualify. Repo + demo.
 
 How Lute satisfies it:
-- Composition: Subgraph (Studio) + Substreams (reusable ERC-4626 module) + Subgraph MCP for discovery = ≥2 Graph products.
+- Intended composition: Subgraph/Graph provider data + Substreams + Subgraph MCP for discovery. The Substreams and live MCP evidence are still pending and must be demonstrated before claiming this prize.
 - Standardization: the ERC-4626 **Integrity Pack** (`erc4626@1`) is a reusable standard; a reusable ERC-4626 Substreams package makes the standard portable.
 
 ## Hedera — AI & Agentic Payments ($6,000)
@@ -48,7 +48,7 @@ Requirements:
 - A **Recipe** using both in one working flow. Screen recording. Bazantic username in submission.
 
 How Lute satisfies it:
-- Bazantic Gateway over `openapi/lute.yaml` exposing `lute_audit_subgraph`, `lute_get_verification`, `lute_get_evidence`, `lute_supported_integrity_packs`, `lute_get_trust_manifest`.
+- Bazantic artifacts currently describe the audit API in `bazantic/openapi.json`; the live Gateway and Verify-Before-Trust Recipe are still pending and the spec should be aligned before submission.
 - **"Verify Before Trust" Recipe**: a Graph sponsor service resolves/queries a data source → Lute audits it → policy gate. Outcome depends on both The Graph and Lute.
 
 ### Agentify a New API ($1,000) — possible secondary

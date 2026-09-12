@@ -88,6 +88,23 @@ test("unsupported target -> INCONCLUSIVE (not VERIFIED)", async () => {
   assert.match(r.inconclusiveReason ?? "", /unsupported/);
 });
 
+test("unexpected subgraph failure -> INCONCLUSIVE instead of a thrown/green result", async () => {
+  const rpc = fakeRpc((method) => {
+    if (method === "eth_blockNumber") return "0x30f0000";
+    if (method === "eth_getLogs") return [];
+    return null;
+  });
+  const malformedSource: SubgraphSource = {
+    endpoint: "test://malformed", entity: "e",
+    async fetchEvents() {
+      throw new Error("malformed response");
+    },
+  };
+  const r = await runAudit({ rpc, contract: VAULT, eventName: "Deposit", fromBlock: 100n, toBlock: 200n, subgraph: malformedSource, logger: quietLog });
+  assert.equal(r.verdict, "INCONCLUSIVE");
+  assert.match(r.inconclusiveReason ?? "", /SUBGRAPH read failed/);
+});
+
 // ---- check-level negatives ----
 function raw(tx: string, li: number, block: string, assets: string): CanonicalEvent {
   return { network: "base", contract: VAULT, eventName: "Deposit", blockNumber: block, blockHash: "0x", transactionHash: tx, transactionIndex: 0, logIndex: li, fields: { sender: "0xa", owner: "0xa", assets, shares: "1" }, source: "RAW_RPC" };

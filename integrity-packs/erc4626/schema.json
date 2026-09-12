@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lute ERC-4626 Integrity Pack",
+  "type": "object",
+  "required": ["id", "version", "standard", "supportedChains", "requiredSources", "strongChecks"],
+  "properties": {
+    "id": { "const": "erc4626" },
+    "version": { "const": "1" },
+    "standard": { "const": "ERC-4626" },
+    "supportedChains": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "requiredSources": { "type": "array", "items": { "enum": ["RAW_RPC", "SUBGRAPH", "SUBSTREAMS"] } },
+    "strongChecks": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "unsupportedClaims": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

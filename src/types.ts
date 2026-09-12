@@ -120,4 +120,5 @@ export type AuditReport = {
   subgraphEvidence: SubgraphEvidence | null;
   firstDivergence: FirstDivergence;
   inconclusiveReason?: string;
+  evidenceRoot?: string;
 };

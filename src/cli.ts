@@ -23,6 +23,14 @@ import { buildCandidateManifest, shortHash } from "./candidate.js";
 import { decideGate } from "./gate.js";
 import type { AuditReport, CheckResult } from "./types.js";
 import { toJSON } from "./bigint.js";
+import { evidenceRoot } from "./evidence.js";
+import {
+  createVerificationRun,
+  freshnessFor,
+  loadVerificationRun,
+  requiredStrongChecksPassed,
+  saveVerificationRun,
+} from "./run-store.js";
 
 function parseArgs(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {};
@@ -136,36 +144,31 @@ async function runAttest(rest: string[]): Promise<number> {
 
 async function runGate(rest: string[]): Promise<number> {
   const args = parseArgs(rest);
-  const contract = args.contract;
-  const eventName = args.event ?? "Deposit";
-  if (!contract) throw new Error("--contract is required");
-  if (!args["from-block"] || !args["to-block"]) throw new Error("--from-block and --to-block are required");
   const candidateDir = args.candidate ?? "subgraph";
-  const runId = newRunId();
   const quiet = args.json === "true";
-  const logger = new Logger(runId, !quiet);
-  const rpc = resolveVerifierRpc(logger);
+  const verifiedRunPath = args.run ?? args["verification-file"];
+  if (!verifiedRunPath) throw new Error("--run <VerificationRun.json> is required; gate never self-verifies a candidate");
 
-  // 1) hash the exact candidate that would be deployed
+  // Hash the exact candidate that would be deployed and load a prior run.
   const manifest = buildCandidateManifest(candidateDir);
-  // 2) verify the indexed output against raw chain (bound to this candidate)
-  const source = makeSource(args.subgraph ?? "morpho", contract, eventName, rpc, { allowRemoteGraphNodeUrl: true });
-  const report = await runAudit({ rpc, contract, eventName, fromBlock: BigInt(args["from-block"]), toBlock: BigInt(args["to-block"]), subgraph: source, logger, runId });
-  // 3) gate decision (verification bound to candidateHash)
-  const strongFailed = report.checks.some((c) => c.class === "STRONG" && c.status === "FAIL");
+  const verifiedRun = loadVerificationRun(verifiedRunPath);
+  const report = verifiedRun.report;
   const gate = decideGate({
     verdict: report.verdict,
     candidateHash: manifest.candidateHash,
-    verifiedCandidateHash: manifest.candidateHash,
-    requiredStrongChecksPassed: !strongFailed,
-    sourcesComplete: report.verdict !== "INCONCLUSIVE" && !!report.rawEvidence && !!report.subgraphEvidence,
+    verifiedCandidateHash: verifiedRun.candidateHash,
+    requiredStrongChecksPassed: requiredStrongChecksPassed(report.checks),
+    sourcesComplete: verifiedRun.coverage?.sourcesComplete ?? (report.verdict !== "INCONCLUSIVE" && !!report.rawEvidence && !!report.subgraphEvidence),
+    revoked: verifiedRun.revoked,
+    freshnessOk: freshnessFor(verifiedRun),
   });
 
   if (quiet) {
-    process.stdout.write(toJSON({ candidate: manifest, verdict: report.verdict, gate, report }) + "\n");
+    process.stdout.write(toJSON({ candidate: manifest, verifiedRun, gate }) + "\n");
   } else {
     const L = ["LUTE DEPLOYMENT GATE", "", `Candidate:     ${candidateDir}  (${manifest.fileCount} files)`,
-      `Candidate hash: ${shortHash(manifest.candidateHash)}…`, `Verdict:       ${report.verdict}`,
+      `Candidate hash: ${shortHash(manifest.candidateHash)}…`, `Verified hash: ${shortHash(verifiedRun.candidateHash)}…`,
+      `Verification:  ${verifiedRun.runId}`, `Verdict:       ${report.verdict}`,
       `RAW_RPC:       ${report.rawEvidence?.eventCount ?? "—"}   SUBGRAPH: ${report.subgraphEvidence?.recordCount ?? "—"}`,
       "", `GATE:          ${gate.state} (${gate.allowed ? "deployment allowed" : "deployment blocked"})`,
       `Reason:        ${gate.reasons.join("; ")}`];
@@ -177,15 +180,47 @@ async function runGate(rest: string[]): Promise<number> {
   return gate.allowed ? 0 : 2;
 }
 
+async function runVerify(rest: string[]): Promise<number> {
+  const args = parseArgs(rest);
+  const contract = args.contract;
+  const eventName = args.event ?? "Deposit";
+  if (!contract) throw new Error("--contract is required");
+  if (!args["from-block"] || !args["to-block"]) throw new Error("--from-block and --to-block are required");
+  const candidateDir = args.candidate ?? "subgraph";
+  const runId = newRunId();
+  const quiet = args.json === "true";
+  const logger = new Logger(runId, !quiet);
+  const rpc = resolveVerifierRpc(logger);
+  const source = makeSource(args.subgraph ?? "morpho", contract, eventName, rpc, { allowRemoteGraphNodeUrl: true });
+  const report = await runAudit({
+    rpc,
+    contract,
+    eventName,
+    fromBlock: BigInt(args["from-block"]),
+    toBlock: BigInt(args["to-block"]),
+    subgraph: source,
+    logger,
+    runId,
+    minConfirmations: args["min-confirmations"] ? BigInt(args["min-confirmations"]) : undefined,
+  });
+  const candidate = buildCandidateManifest(candidateDir);
+  const run = createVerificationRun({ report, candidate, evidenceRoot: report.evidenceRoot ?? evidenceRoot(report) });
+  const output = saveVerificationRun(run, args.output);
+  if (quiet) process.stdout.write(toJSON({ ...run, file: output }) + "\n");
+  else process.stdout.write(`LUTE VERIFICATION\n\nRun: ${run.runId}\nCandidate: ${candidate.candidateHash}\nVerdict: ${run.verdict}\nSaved: ${output}\n`);
+  return verdictExitCode(report.verdict);
+}
+
 async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
   if (cmd === "watch") return runWatch(rest);
+  if (cmd === "verify") return runVerify(rest);
   if (cmd === "explain") return runExplain(rest);
   if (cmd === "attest") return runAttest(rest);
   if (cmd === "gate") return runGate(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute audit --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute gate  --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--json]\n  lute watch --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest --file <report.json>   (publishes the verdict to Hedera HCS)\n",
+      "usage:\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }

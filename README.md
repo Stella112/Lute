@@ -314,6 +314,30 @@ Returns the topic id, sequence number, transaction id, and a HashScan link. The 
 builder is offline-tested; the live HCS submit needs a (free) testnet operator account —
 Lute never logs the key.
 
+## Hedera x402 paid verification
+
+The qualifying Hedera path is a separate x402 v2 service in
+[`src/paid/server.ts`](src/paid/server.ts). It advertises a native-HBAR requirement,
+discovers the Hedera fee payer from Blocky402's `/supported` endpoint, verifies and
+settles the payment through Blocky402, then runs the real Lute reconciler and returns
+the complete audit report. The demo consumer in [`src/paid/agent.ts`](src/paid/agent.ts)
+uses `@x402/fetch` to handle the 402 → sign → retry flow.
+
+```bash
+# Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY in a local, ignored .env first.
+node --env-file=.env --import tsx src/paid/server.ts
+# In another terminal, with a funded Hedera testnet payer:
+node --env-file=.env --import tsx src/paid/agent.ts
+```
+
+Set `PAID_PUBLIC_URL` to the externally reachable HTTPS origin when running behind a
+proxy; it is part of the signed x402 resource requirement. The endpoint bounds request
+body size and block-range span, rejects caller-supplied graph-node URLs, and returns a
+400/413 for invalid requests before asking Blocky402 to verify payment. A real paid
+request still requires a funded testnet payer and should be recorded separately in
+[`docs/judging/evidence.md`](docs/judging/evidence.md); tests do not pretend to settle
+payments.
+
 ## Checks implemented
 
 `event_count`, `event_presence` (bidirectional: missing + phantom), `transaction_provenance`,
@@ -348,5 +372,9 @@ unchanged verifier.
 
 ## Scope
 
-Phase 1 only: existing indexed Subgraph + independent raw RPC. No dashboard, MCP,
-Hedera, Bazantic, x402, Graph Node, deployment, or NL generation was built.
+The verifier, MCP, watch runner, dashboard, HCS attestation, candidate hashing/gate,
+real Graph Node path, generic x402 path, and the Blocky402/Hedera paid-service code are
+implemented. Live Subgraph Studio deployment, Substreams differential verification,
+AI build/repair orchestration, continuous incident persistence, and a recorded real
+paid Hedera request remain separate demo/production work and must not be presented as
+complete until their evidence is collected.

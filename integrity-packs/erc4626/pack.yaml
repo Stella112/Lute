@@ -1,0 +1,24 @@
+id: erc4626
+version: "1"
+standard: ERC-4626
+supportedChains:
+  - base
+requiredSources:
+  - RAW_RPC
+  - SUBGRAPH
+events:
+  - Deposit
+  - Withdraw
+strongChecks:
+  - event_count
+  - duplicate_detection
+  - event_presence
+  - transaction_provenance
+  - block_provenance
+  - field_accuracy
+policies:
+  failClosed: true
+  requireFinalizedRange: true
+unsupportedClaims:
+  - APY
+  - arbitrary vault strategy accounting

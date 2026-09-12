@@ -28,6 +28,10 @@ export function Overview({ onNavigate }: { onNavigate: (section: string) => void
 
   return (
     <>
+      <div className="demo-notice" role="status">
+        <strong>Product preview data</strong>
+        <span>Overview cards and history are sample UI fixtures. Run External Audit for live-backed results.</span>
+      </div>
       <div className="dash-head">
         <div>
           <h1>Overview</h1>

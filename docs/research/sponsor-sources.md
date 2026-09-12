@@ -21,8 +21,8 @@
 
 ## Hedera — x402 & Blocky402
 - `hedera-dev/x402-hedera`: Hedera **testnet** paywall reference; USDC `0.0.429274` or native HBAR; Express 402 server + axios client; `@hashgraph/sdk`. **Uses its own facilitator, NOT Blocky402.**
-- **Blocky402** (blocky402.com): the facilitator the ETHOnline Hedera prize **requires**. Open facilitator, **no API key on testnet**; hosted testnet supports **Hedera Testnet** (+ Polygon Amoy, Solana Devnet); hosted mainnet supports Hedera Mainnet. Client integrates via **`@x402/fetch`** (handles 402 → sign → retry-with-`X-PAYMENT` → decode settlement). Resource server returns 402 + requirements; settlement on-chain; decode via `getPaymentSettleResponse`.
-- **Action for Lute (Phase 20):** implement the paid verification endpoint's settlement through Blocky402 on Hedera testnet; consumer demo agent uses `@x402/fetch`. Confirm the exact Blocky402 facilitator base URL from its docs on the day.
+- **Blocky402** (blocky402.com): the facilitator the ETHOnline Hedera prize **requires**. The current hosted testnet is `https://api.testnet.blocky402.com`, uses x402 **v2**, requires no API key, and advertises Hedera Testnet with a facilitator `feePayer` through `GET /supported`. The resource server returns Hedera requirements; Blocky402 verifies and settles the same payment payload; the client can use **`@x402/fetch`** and decode the settlement response.
+- **Action for Lute (Phase 20):** `src/paid/` implements this path. A funded testnet payer and one approved live request are still required for qualifying evidence; offline tests do not claim settlement.
 - HCS attestation (Hedera Consensus Service) already implemented in prior work (`src/hedera.ts`, live on testnet topic `0.0.10485368`) — reuse as the optional attestation strengthener.
 
 ## Bazantic (bazantic.com/docs)

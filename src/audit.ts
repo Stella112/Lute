@@ -12,6 +12,7 @@ import { runChecks } from "./reconcile.js";
 import { BaseRpc, RpcError } from "./rpc.js";
 import { SubgraphError, type SubgraphSource } from "./subgraph/source.js";
 import type { AuditReport, CheckResult, Verdict } from "./types.js";
+import { evidenceRoot } from "./evidence.js";
 
 export type AuditOptions = {
   rpc: BaseRpc;
@@ -63,6 +64,13 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
     event: eventName,
   };
 
+  if (fromBlock < 0n || toBlock < fromBlock) {
+    return inconclusive(base, fromBlock, toBlock, "unknown", "invalid block range");
+  }
+  if (opts.minConfirmations !== undefined && opts.minConfirmations < 0n) {
+    return inconclusive(base, fromBlock, toBlock, "unknown", "minConfirmations cannot be negative");
+  }
+
   // unsupported target -> INCONCLUSIVE (never VERIFIED)
   if (!ERC4626_EVENTS[eventName]) {
     return inconclusive(base, fromBlock, toBlock, "unknown", `unsupported event "${eventName}" for ERC-4626 target`);
@@ -100,7 +108,7 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
     if (e instanceof RpcError) {
       return inconclusive(base, fromBlock, toBlock, safeHead, `RAW_RPC read failed (${e.kind}): ${e.message}`);
     }
-    throw e;
+    return inconclusive(base, fromBlock, toBlock, safeHead, `RAW_RPC read failed: ${errorMessage(e)}`);
   }
 
   // SUBGRAPH path (candidate)
@@ -113,10 +121,15 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
     if (e instanceof SubgraphError) {
       return inconclusive(base, fromBlock, toBlock, safeHead, `SUBGRAPH read failed (${e.kind}): ${e.message}`);
     }
-    throw e;
+    return inconclusive(base, fromBlock, toBlock, safeHead, `SUBGRAPH read failed: ${errorMessage(e)}`);
   }
 
-  const checks = runChecks({ eventName, raw: rawResult.events, indexed: idxResult.events });
+  let checks: CheckResult[];
+  try {
+    checks = runChecks({ eventName, raw: rawResult.events, indexed: idxResult.events });
+  } catch (e) {
+    return inconclusive(base, fromBlock, toBlock, safeHead, `reconciliation failed: ${errorMessage(e)}`);
+  }
   const verdict = decideVerdict(checks);
 
   const report: AuditReport = {
@@ -150,9 +163,19 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
       fetchRaw: async (a, b) => (await readCanonicalEvents(rpc, contract, eventName, a, b)).events,
       fetchIndexed: async (a, b) => (await subgraph.fetchEvents(eventName, a, b)).events,
     };
-    const search = await logger.stage("first_divergence", { stage: "bisect" }, () =>
-      findFirstDivergence(fetchers, eventName, fromBlock, toBlock),
-    );
+    let search;
+    try {
+      search = await logger.stage("first_divergence", { stage: "bisect" }, () =>
+        findFirstDivergence(fetchers, eventName, fromBlock, toBlock),
+      );
+    } catch (e) {
+      // The initial mismatch is real, but the required evidence locator could not
+      // complete. Do not return a partial/misleading failed report as a finished run.
+      report.verdict = "INCONCLUSIVE";
+      report.inconclusiveReason = `first-divergence search failed: ${errorMessage(e)}`;
+      report.evidenceRoot = evidenceRoot(report);
+      return report;
+    }
     if (search) {
       report.firstDivergence = search.divergence;
       logger.info("first_divergence.found", {
@@ -164,6 +187,8 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
     }
   }
 
+  report.evidenceRoot = evidenceRoot(report);
+
   logger.info("audit.complete", {
     network: "base",
     contract,
@@ -174,6 +199,10 @@ export async function runAudit(opts: AuditOptions): Promise<AuditReport> {
   return report;
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function inconclusive(
   base: Pick<AuditReport, "runId" | "target" | "event">,
   fromBlock: bigint,
@@ -181,7 +210,7 @@ function inconclusive(
   safeHead: string,
   reason: string,
 ): AuditReport {
-  return {
+  const report: AuditReport = {
     ...base,
     range: { startBlock: fromBlock.toString(), endBlock: toBlock.toString(), safeHead },
     verdict: "INCONCLUSIVE",
@@ -192,4 +221,6 @@ function inconclusive(
     firstDivergence: null,
     inconclusiveReason: reason,
   };
+  report.evidenceRoot = evidenceRoot(report);
+  return report;
 }

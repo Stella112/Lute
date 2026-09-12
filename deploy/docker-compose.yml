@@ -63,6 +63,24 @@ services:
       GRAPH_NODE_URL: http://graph-node:8000
       PORT: "8788"
 
+  lute-paid:
+    profiles: ["paid"]
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - graph-node
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8791:8791"
+    environment:
+      BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
+      GRAPH_NODE_URL: http://graph-node:8000
+      PAID_PORT: "8791"
+      PAID_PUBLIC_URL: ${PAID_PUBLIC_URL:-https://uselute.xyz}
+
 volumes:
   postgres-data:
   ipfs-data:

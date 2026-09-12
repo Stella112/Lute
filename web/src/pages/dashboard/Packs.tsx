@@ -8,6 +8,10 @@ const STATUS_LABEL = { STABLE: "Stable", BETA: "Beta", COMING_SOON: "Coming soon
 export function Packs() {
   return (
     <>
+      <div className="demo-notice" role="status">
+        <strong>Pack catalog preview</strong>
+        <span>Only the currently implemented ERC-4626 checks are live-backed in this build.</span>
+      </div>
       <div className="dash-head">
         <div>
           <h1>Integrity Packs</h1>

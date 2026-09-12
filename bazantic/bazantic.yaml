@@ -27,11 +27,11 @@ gateways:
       product_website: https://github.com/Stella112/Lute
     upstream:
       # Public HTTPS URL of the deployed Lute audit endpoint (src/server.ts).
-      url: https://lute.example.com
+      url: https://uselute.xyz
       protocol: rest
       spec:
         type: openapi
-        url: https://lute.example.com/openapi.json # or host this file publicly
+        url: https://uselute.xyz/openapi.json
       auth: none
     default_price: "$0.01" # per call; Bazantic collects via x402/MPP
     methods: unmanaged # derive callable operations from the OpenAPI spec

@@ -6,9 +6,64 @@
     "description": "Independent verification of a Subgraph index against raw Base RPC logs. POST an ERC-4626 vault + block range and get a machine-readable reconciliation verdict (VERIFIED / FAILED / INCONCLUSIVE) with first-divergence evidence. Bazantic fronts this upstream with x402/MPP payments and exposes each operation as an MCP recipe."
   },
   "servers": [
-    { "url": "https://lute.example.com", "description": "Your deployed Lute audit endpoint (replace with the public HTTPS URL of src/server.ts)" }
+    { "url": "https://uselute.xyz", "description": "Public Lute verification API" }
   ],
   "paths": {
+    "/v1/audits": {
+      "post": {
+        "operationId": "auditVaultV1",
+        "summary": "Run an independent ERC-4626 audit",
+        "description": "Runs the Lute verifier against raw Base RPC logs and an indexed candidate.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditRequest" } } } },
+        "responses": {
+          "200": { "description": "Audit report", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditReport" } } } },
+          "400": { "description": "Invalid request" },
+          "500": { "description": "Audit infrastructure failure" }
+        }
+      }
+    },
+    "/v1/verifications": {
+      "post": {
+        "operationId": "verifyCurrentCandidate",
+        "summary": "Verify and persist the configured candidate",
+        "description": "Runs the audit, hashes the server-configured candidate, and persists an immutable-ish VerificationRun used by the deployment gate.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditRequest" } } } },
+        "responses": {
+          "201": { "description": "Verified run persisted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationRun" } } } },
+          "200": { "description": "Run persisted with FAILED or INCONCLUSIVE verdict" }
+        }
+      }
+    },
+    "/v1/verifications/{runId}": {
+      "get": {
+        "operationId": "getVerification",
+        "summary": "Get a persisted VerificationRun",
+        "parameters": [{ "$ref": "#/components/parameters/RunId" }],
+        "responses": { "200": { "description": "VerificationRun", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationRun" } } } }, "404": { "description": "Run not found" } }
+      }
+    },
+    "/v1/verifications/{runId}/evidence": {
+      "get": {
+        "operationId": "getVerificationEvidence",
+        "summary": "Get evidence for a persisted run",
+        "parameters": [{ "$ref": "#/components/parameters/RunId" }],
+        "responses": { "200": { "description": "Evidence and root" } }
+      }
+    },
+    "/v1/verifications/{runId}/manifest": {
+      "get": {
+        "operationId": "getVerifiedManifest",
+        "summary": "Get the candidate manifest bound to a run",
+        "parameters": [{ "$ref": "#/components/parameters/RunId" }],
+        "responses": { "200": { "description": "Candidate manifest" } }
+      }
+    },
+    "/v1/integrity-packs": {
+      "get": { "operationId": "listIntegrityPacks", "summary": "List supported Integrity Packs", "responses": { "200": { "description": "Integrity Packs" } } }
+    },
+    "/v1/integrity-packs/erc4626@1": {
+      "get": { "operationId": "getErc4626Pack", "summary": "Get the ERC-4626 Integrity Pack", "responses": { "200": { "description": "ERC-4626 pack" } } }
+    },
     "/api/audit": {
       "post": {
         "operationId": "auditVault",
@@ -67,8 +122,8 @@
         "properties": {
           "contract": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$", "description": "ERC-4626 vault address on Base" },
           "event": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" },
-          "fromBlock": { "type": "integer", "description": "inclusive start block" },
-          "toBlock": { "type": "integer", "description": "inclusive end block (well behind chain head)" },
+          "fromBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }], "description": "inclusive start block; strings preserve large integers" },
+          "toBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }], "description": "inclusive end block (well behind chain head)" },
           "subgraph": { "type": "string", "default": "morpho", "description": "morpho | graphnode:<name> | local[:bug]" }
         }
       },
@@ -100,6 +155,7 @@
           },
           "rawEvidence": { "type": "object", "description": "RAW_RPC provenance (topic0, chunkCount, eventCount, rpcAlias)" },
           "subgraphEvidence": { "type": "object", "description": "index provenance (endpoint, entity, pageCount, recordCount)" },
+          "evidenceRoot": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "firstDivergence": {
             "type": ["object", "null"],
             "properties": {
@@ -111,6 +167,29 @@
             }
           }
         }
+      },
+      "VerificationRun": {
+        "type": "object",
+        "required": ["schemaVersion", "runId", "candidateHash", "report", "coverage", "evidenceRoot", "verdict"],
+        "properties": {
+          "schemaVersion": { "const": 1 },
+          "runId": { "type": "string" },
+          "candidateHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "candidate": { "type": "object" },
+          "report": { "$ref": "#/components/schemas/AuditReport" },
+          "coverage": { "type": "object" },
+          "evidenceRoot": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "verdict": { "type": "string", "enum": ["VERIFIED", "FAILED", "INCONCLUSIVE"] },
+          "revoked": { "type": "boolean" }
+        }
+      }
+    },
+    "parameters": {
+      "RunId": {
+        "name": "runId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" }
       }
     }
   }

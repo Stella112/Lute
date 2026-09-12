@@ -26,8 +26,8 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Explicit coverage | 🟡 partial — checks list yes; strong/conditional counts not formalized | `src/reconcile.ts` |
 | Correct real candidate verifies (75==75 VERIFIED) | ✅ | live + `evidence_*.json` |
 | Multiple fault injections fail; same verifier | 🟡 partial — one planted bug (block-id) + swap/duplicate variants; not a full corpus | `src/subgraph/localMapping.ts`, subgraph `mapping.bugged.ts` |
-| Candidate hashing + stale invalidation | ❌ not built | — |
-| Deployment gate blocks bad/stale | 🟡 UI only (demo) — no deterministic backend `DeploymentGateDecision` | `web/.../Overview.tsx` |
+| Candidate hashing + stale invalidation | ✅ deterministic manifest/hash + tests | `src/candidate.ts`, `test/candidate.test.ts` |
+| Deployment gate blocks bad/stale | ✅ pure backend decision + CLI gate; no persistent deployment service yet | `src/gate.ts`, `src/cli.ts`, `test/gate.test.ts` |
 | Build workflow (NL → scaffold → deploy) | ❌ not built (Graph skills not wired into a build pipeline) | — |
 | Repair workflow + reverification | 🟡 conceptual — bugged/honest mappings exist; no RepairContext pipeline | — |
 | Deploy exact verified candidate to Studio + smoke query | 🟡 self-hosted graph-node deploy done; **Subgraph Studio** deploy not done | `deploy/`, `subgraph/` |
@@ -37,25 +37,25 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | OpenAPI spec | 🟡 `bazantic/openapi.json` exists; not the full `openapi/lute.yaml` (§39) | `bazantic/openapi.json` |
 | Reusable Substreams path (live) | ❌ not built | — |
 | Monitoring (runtime vs integrity) + incidents | 🟡 UI only (demo) | `web/` |
-| Hedera paid audit via **Blocky402** + real paid request | ❌ not built (prior x402 used generic facilitator; HCS attestation ✅) | `src/x402-server.ts`, `src/hedera.ts` |
+| Hedera paid audit via **Blocky402** + real paid request | 🟡 v2 server/agent implemented and offline-tested; live paid request not recorded | `src/paid/`, `test/paid.test.ts` |
 | HCS attestation | ✅ live testnet (topic `0.0.10485368`) | `src/hedera.ts` |
 | Bazantic Gateway + Verify-Before-Trust Recipe | 🟡 artifacts only; no live Gateway/Recipe | `bazantic/` |
 | Light/dark evidence-first UI | ✅ landing + dashboard | `web/` |
 | No fake live data / no secrets committed | ✅ (`.env` gitignored; demo namespaced) | — |
 | Tests pass | ✅ 39 backend offline + live; frontend builds | `test/` |
-| README reproducible / demo script / judge evidence | 🟡 README yes; `docs/demo`, `docs/judging` not written | `README.md` |
+| README reproducible / demo script / judge evidence | ✅ README, demo script, and honest evidence ledger | `README.md`, `docs/demo/`, `docs/judging/` |
 
 ## Biggest gaps to close for the contract (priority)
-1. **Candidate hashing + Deployment Gate (backend, deterministic)** — §25/26; enables the core acceptance test.
-2. **Hedera paid verification via Blocky402** — §45/46 (the Hedera $6k requirement).
-3. **Reusable ERC-4626 Substreams module + differential path** — §14/34/35 (the Graph composable $5k).
-4. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
-5. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
-6. **Studio deployment + smoke test** — §12/31/32.
-7. **Bazantic live Gateway + Recipe** — §22/53/54.
-8. `openapi/lute.yaml`, docs/architecture, docs/demo, docs/judging.
+1. **Live Hedera evidence** — run one approved funded testnet request through Blocky402 and record the settlement transaction.
+2. **Reusable ERC-4626 Substreams module + differential path** — §14/34/35 (the Graph composable $5k).
+3. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
+4. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
+5. **Studio deployment + smoke test** — §12/31/32.
+6. **Bazantic live Gateway + Recipe** — §22/53/54.
+7. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
+8. `openapi/lute.yaml` alignment and the remaining architecture docs.
 
 ## Invariant check on existing verifier
 - INVARIANT A (candidate vs verifier independence): ✅ verifier decodes raw logs; never runs candidate mapping.
 - INVARIANT E/I (fail-closed, no false VERIFIED): ✅ INCONCLUSIVE on source failure; tested.
-- Others (F/G candidate-hash binding, H reverification): ❌ not yet enforced (no candidate hash) — top priority.
+- Invariant F/G: ✅ the hash and pure gate prevent a hash mismatch from being allowed; a persistent deploy service and automated H reverification are still missing.
