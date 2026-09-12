@@ -19,6 +19,8 @@ import { makeSource } from "./sources.js";
 import { runBatch, verdictExitCode, type BatchReport, type TargetSpec } from "./runner.js";
 import { explainReport } from "./explain.js";
 import { publishAttestation, isHederaConfigured } from "./hedera.js";
+import { buildCandidateManifest, shortHash } from "./candidate.js";
+import { decideGate } from "./gate.js";
 import type { AuditReport, CheckResult } from "./types.js";
 import { toJSON } from "./bigint.js";
 
@@ -132,14 +134,58 @@ async function runAttest(rest: string[]): Promise<number> {
   return 0;
 }
 
+async function runGate(rest: string[]): Promise<number> {
+  const args = parseArgs(rest);
+  const contract = args.contract;
+  const eventName = args.event ?? "Deposit";
+  if (!contract) throw new Error("--contract is required");
+  if (!args["from-block"] || !args["to-block"]) throw new Error("--from-block and --to-block are required");
+  const candidateDir = args.candidate ?? "subgraph";
+  const runId = newRunId();
+  const quiet = args.json === "true";
+  const logger = new Logger(runId, !quiet);
+  const rpc = resolveVerifierRpc(logger);
+
+  // 1) hash the exact candidate that would be deployed
+  const manifest = buildCandidateManifest(candidateDir);
+  // 2) verify the indexed output against raw chain (bound to this candidate)
+  const source = makeSource(args.subgraph ?? "morpho", contract, eventName, rpc, { allowRemoteGraphNodeUrl: true });
+  const report = await runAudit({ rpc, contract, eventName, fromBlock: BigInt(args["from-block"]), toBlock: BigInt(args["to-block"]), subgraph: source, logger, runId });
+  // 3) gate decision (verification bound to candidateHash)
+  const strongFailed = report.checks.some((c) => c.class === "STRONG" && c.status === "FAIL");
+  const gate = decideGate({
+    verdict: report.verdict,
+    candidateHash: manifest.candidateHash,
+    verifiedCandidateHash: manifest.candidateHash,
+    requiredStrongChecksPassed: !strongFailed,
+    sourcesComplete: report.verdict !== "INCONCLUSIVE" && !!report.rawEvidence && !!report.subgraphEvidence,
+  });
+
+  if (quiet) {
+    process.stdout.write(toJSON({ candidate: manifest, verdict: report.verdict, gate, report }) + "\n");
+  } else {
+    const L = ["LUTE DEPLOYMENT GATE", "", `Candidate:     ${candidateDir}  (${manifest.fileCount} files)`,
+      `Candidate hash: ${shortHash(manifest.candidateHash)}…`, `Verdict:       ${report.verdict}`,
+      `RAW_RPC:       ${report.rawEvidence?.eventCount ?? "—"}   SUBGRAPH: ${report.subgraphEvidence?.recordCount ?? "—"}`,
+      "", `GATE:          ${gate.state} (${gate.allowed ? "deployment allowed" : "deployment blocked"})`,
+      `Reason:        ${gate.reasons.join("; ")}`];
+    if (report.verdict === "FAILED" && report.firstDivergence) {
+      L.push(`First divergence: block ${report.firstDivergence.blockNumber} · log ${report.firstDivergence.logIndex} · ${report.firstDivergence.check}`);
+    }
+    process.stdout.write(L.join("\n") + "\n");
+  }
+  return gate.allowed ? 0 : 2;
+}
+
 async function main(): Promise<number> {
   const [, , cmd, ...rest] = process.argv;
   if (cmd === "watch") return runWatch(rest);
   if (cmd === "explain") return runExplain(rest);
   if (cmd === "attest") return runAttest(rest);
+  if (cmd === "gate") return runGate(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute audit --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute watch --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest --file <report.json>   (publishes the verdict to Hedera HCS)\n",
+      "usage:\n  lute audit --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute gate  --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--json]\n  lute watch --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }
