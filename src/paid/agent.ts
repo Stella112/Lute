@@ -9,8 +9,7 @@
 
 import { Client, PrivateKey, Hbar, AccountBalanceQuery } from "@x402/hedera";
 import { AccountCreateTransaction } from "@hiero-ledger/sdk";
-import { ExactHederaScheme, createClientHederaSigner, HEDERA_TESTNET_CAIP2 } from "@x402/hedera";
-import { wrapFetchWithPaymentFromConfig, decodePaymentResponseHeader } from "@x402/fetch";
+import { ExactHederaScheme, createClientHederaSigner } from "@x402/hedera";
 
 const PAID_URL = (process.env.PAID_URL ?? "http://localhost:8793").replace(/\/$/, "");
 
@@ -49,31 +48,54 @@ async function ensureAgent(): Promise<{ id: string; key: string }> {
 
 async function main() {
   const agent = await ensureAgent();
-  const signer = createClientHederaSigner(agent.id, PrivateKey.fromStringECDSA(agent.key), { network: HEDERA_TESTNET_CAIP2 });
-  const payFetch = wrapFetchWithPaymentFromConfig(fetch, {
-    schemes: [{ network: HEDERA_TESTNET_CAIP2, client: new ExactHederaScheme(signer) }],
-    spendControls: false, // paying in native HBAR (non-default asset) on testnet
-  });
+  const payTo = process.env.HEDERA_OPERATOR_ID;
+  if (payTo && agent.id === payTo) {
+    throw new Error("HEDERA_AGENT_ID must be a separate Hedera account from HEDERA_OPERATOR_ID/payTo");
+  }
+  // NOTE: the signer's `network` must be the CAIP-2 id ("hedera:testnet"); the SDK
+  // network name ("testnet") is rejected by assertSupportedHederaNetwork.
+  const signer = createClientHederaSigner(agent.id, PrivateKey.fromStringECDSA(agent.key), { network: "hedera:testnet" });
+  const scheme = new ExactHederaScheme(signer);
+  const url = `${PAID_URL}/v1/paid/audits`;
+  const body = JSON.stringify({ contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183", event: "Deposit", fromBlock: 51115000, toBlock: 51125000, subgraph: "morpho" });
 
   // balance before
   const payerClient = Client.forTestnet().setOperator(agent.id, PrivateKey.fromStringECDSA(agent.key));
-  let bal;
   try {
-    bal = await new AccountBalanceQuery().setAccountId(agent.id).execute(payerClient);
+    const bal = await new AccountBalanceQuery().setAccountId(agent.id).execute(payerClient);
+    process.stderr.write(`agent ${agent.id} balance: ${bal.hbars.toString()}\n`);
   } finally {
     payerClient.close();
   }
-  process.stderr.write(`agent ${agent.id} balance: ${bal.hbars.toString()}\n`);
 
-  const body = JSON.stringify({ contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183", event: "Deposit", fromBlock: 51115000, toBlock: 51125000, subgraph: "morpho" });
-  process.stderr.write(`requesting paid audit at ${PAID_URL}/v1/paid/audits …\n`);
-  const res = await payFetch(`${PAID_URL}/v1/paid/audits`, { method: "POST", headers: { "content-type": "application/json" }, body });
-  const json = await res.json();
+  // 1) request -> expect HTTP 402 with Hedera payment requirements
+  process.stderr.write(`requesting paid audit at ${url} …\n`);
+  const r1 = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body });
+  if (r1.status !== 402) {
+    console.log(JSON.stringify({ status: r1.status, result: await r1.json(), settlement: null }, null, 2));
+    return;
+  }
+  const challenge = (await r1.json()) as { accepts: Record<string, unknown>[] };
+  const requirements = challenge.accepts[0]!;
+  process.stderr.write(`received 402; signing payment of ${requirements.amount} tinybar to ${requirements.payTo} on ${requirements.network}…\n`);
 
-  const settleHeader = res.headers.get("x-payment-response");
-  const settlement = settleHeader ? decodePaymentResponseHeader(settleHeader) : null;
+  // 2) build + sign the Hedera payment payload with the exact scheme
+  const result = await scheme.createPaymentPayload(2, requirements as never);
+  const paymentPayload = {
+    x402Version: 2,
+    accepted: requirements,
+    payload: result.payload,
+    ...(result.extensions ? { extensions: result.extensions } : {}),
+  };
+  const xPayment = Buffer.from(JSON.stringify(paymentPayload)).toString("base64");
 
-  console.log(JSON.stringify({ status: res.status, result: json, settlement }, null, 2));
+  // 3) retry with PAYMENT-SIGNATURE -> server verifies + settles via Blocky402, runs the audit
+  const r2 = await fetch(url, { method: "POST", headers: { "content-type": "application/json", "PAYMENT-SIGNATURE": xPayment }, body });
+  const json = await r2.json();
+  const settleHeader = r2.headers.get("x-payment-response");
+  const settlement = settleHeader ? JSON.parse(Buffer.from(settleHeader, "base64").toString("utf8")) : null;
+
+  console.log(JSON.stringify({ status: r2.status, result: json, settlement }, null, 2));
 }
 
 main().catch((e) => { process.stderr.write(`agent error: ${(e as Error).message}\n`); process.exitCode = 1; });
