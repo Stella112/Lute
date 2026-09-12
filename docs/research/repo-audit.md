@@ -35,7 +35,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
 | Lute MCP | ✅ (audit/explain/supported_events) — smaller tool set than §37 | `src/mcp.ts` |
 | OpenAPI spec | 🟡 `bazantic/openapi.json` exists; not the full `openapi/lute.yaml` (§39) | `bazantic/openapi.json` |
-| Reusable Substreams path (live) | 🟡 adapter + offline schema tests done; live run awaits a valid Pinax JWT | `src/subgraph/substreams.ts`, `test/substreams.test.ts` |
+| Reusable Substreams path (live) | ✅ live differential verified: Deposit 75/75 and Withdraw 109/109 | `src/subgraph/substreams.ts`, `test/substreams.test.ts` |
 | Monitoring (runtime vs integrity) + incidents | 🟡 UI only (demo) | `web/` |
 | Hedera paid audit via **Blocky402** + real paid request | 🟡 v2 server/agent implemented and offline-tested; live paid request not recorded | `src/paid/`, `test/paid.test.ts` |
 | HCS attestation | ✅ live testnet (topic `0.0.10485368`) | `src/hedera.ts` |
@@ -46,14 +46,13 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | README reproducible / demo script / judge evidence | ✅ README, demo script, and honest evidence ledger | `README.md`, `docs/demo/`, `docs/judging/` |
 
 ## Biggest gaps to close for the contract (priority)
-1. **Live Substreams evidence** — replace the rejected VPS credential with a valid Pinax JWT and record a finite differential run.
-2. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
-3. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
-4. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
-5. **Studio deployment + smoke test** — §12/31/32.
-6. **Bazantic live Gateway + Recipe** — §22/53/54.
-7. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
-8. `openapi/lute.yaml` alignment and the remaining architecture docs.
+1. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
+2. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
+3. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
+4. **Studio deployment + smoke test** — §12/31/32.
+5. **Bazantic live Gateway + Recipe** — §22/53/54.
+6. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
+7. `openapi/lute.yaml` alignment and the remaining architecture docs.
 
 ## Invariant check on existing verifier
 - INVARIANT A (candidate vs verifier independence): ✅ verifier decodes raw logs; never runs candidate mapping.
