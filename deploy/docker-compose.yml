@@ -70,6 +70,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    command: ["node", "--import", "tsx", "src/paid/server.ts"]
     restart: unless-stopped
     depends_on:
       - graph-node
