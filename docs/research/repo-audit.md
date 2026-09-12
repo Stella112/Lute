@@ -30,7 +30,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Deployment gate blocks bad/stale | ✅ pure backend decision + CLI gate; no persistent deployment service yet | `src/gate.ts`, `src/cli.ts`, `test/gate.test.ts` |
 | Build workflow (NL → scaffold → deploy) | 🟡 supported Base ERC-4626 intent now scaffolds, validates, optionally codegens/builds, and hashes; verification/gate/deploy remain explicit | `src/build.ts`, `src/cli.ts` |
 | Repair workflow + reverification | 🟡 deterministic RepairContext + opt-in known identity fix; fresh verification/gate remain explicit | `src/repair.ts`, `src/cli.ts` |
-| Deploy exact verified candidate to Studio + smoke query | ✅ honest `v0.1.0` deployed to Graph Studio on Base; live `_meta` and `DepositEvent` queries verified | `deploy/`, `subgraph/` |
+| Deploy exact verified candidate to Studio + smoke query | ✅ generated candidate `v0.1.1` deployed to Graph Studio on Base; post-deploy differential verification and entity smoke query passed | `src/build.ts`, `deploy/`, `subgraph/` |
 | External Audit for a supported deployment | ✅ (real, via UI + backend) | `web/.../ExternalAudit.tsx`, `/api/audit` |
 | Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
 | Lute MCP | ✅ (audit/explain/supported_events) — smaller tool set than §37 | `src/mcp.ts` |
