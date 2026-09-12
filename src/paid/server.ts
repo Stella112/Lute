@@ -142,9 +142,10 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
   }
 
   // 1) verify the payment via Blocky402 (does not run Lute's business logic)
-  const verify = (await facilitator("/verify", payment, requirements)) as { isValid: boolean; payer?: string; invalidReason?: string };
+  const verify = (await facilitator("/verify", payment, requirements)) as { isValid: boolean; payer?: string; invalidReason?: string; invalidMessage?: string };
   if (!verify.isValid) {
-    return sendPaymentRequired(res, resource, `payment invalid: ${verify.invalidReason ?? "unknown"}`, requirements);
+    const detail = verify.invalidMessage ? `: ${verify.invalidMessage}` : "";
+    return sendPaymentRequired(res, resource, `payment invalid: ${verify.invalidReason ?? "unknown"}${detail}`, requirements);
   }
 
   // 2) run the REAL verification compute
@@ -157,9 +158,10 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
   });
 
   // 3) settle on-chain; only release the result if settlement actually succeeds
-  const settle = (await facilitator("/settle", payment, requirements)) as { success: boolean; transaction?: string; network?: string; payer?: string; errorReason?: string };
+  const settle = (await facilitator("/settle", payment, requirements)) as { success: boolean; transaction?: string; network?: string; payer?: string; errorReason?: string; errorMessage?: string };
   if (!settle.success) {
-    return sendPaymentRequired(res, resource, `settlement failed: ${settle.errorReason ?? "unknown"}`, requirements);
+    const detail = settle.errorMessage ? `: ${settle.errorMessage}` : "";
+    return sendPaymentRequired(res, resource, `settlement failed: ${settle.errorReason ?? "unknown"}${detail}`, requirements);
   }
 
   // Persist the paid result in the same evidence store as free audits so the live
