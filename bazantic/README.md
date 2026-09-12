@@ -50,6 +50,8 @@ curl -s https://<your-gateway>/mcp -X POST -H 'content-type: application/json' \
 # paid call
 baz grant create --name agent-1 --cap 5
 baz curl https://<your-gateway>/api/audit \
+  -X POST \
+  -H 'content-type: application/json' \
   --account agent-1 --max-amount 0.02 --yes --json \
   -d '{"contract":"0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183","event":"Deposit","fromBlock":51115000,"toBlock":51125000,"subgraph":"morpho"}'
 ```

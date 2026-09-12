@@ -43,6 +43,10 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 - MCP endpoint: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com/mcp`
 - Gateway status: `active`; public MCP `tools/list` and read-only `info` call verified
 - Gateway operations: generated from `https://uselute.xyz/openapi.json`
+- Paid gateway smoke test: `NOT RECORDED AS PASSING` — Bazantic returned HTTP 400
+  (`request body must be valid JSON`) after the payment challenge; the identical
+  payload returned `VERIFIED` directly from Lute, so the paid forwarding path needs
+  provider-side investigation before it is shown as qualifying evidence.
 - Verify Before Trust Recipe: `NOT RECORDED`
 - Bazantic account username: `NOT RECORDED`
 - Other sponsor service used by the Recipe: `NOT RECORDED`
