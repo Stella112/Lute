@@ -45,7 +45,7 @@ services:
       postgres_db: graph-node
       ipfs: "ipfs:5001"
       # chain name "base" must match `network: base` in subgraph.yaml
-      ethereum: "base:${BASE_RPC_VERIFIER:-https://mainnet.base.org}"
+      ethereum: "base:${GRAPH_ETH_RPC:-https://mainnet.base.org}"
       GRAPH_LOG: info
       ETHEREUM_REORG_THRESHOLD: "16"
 
