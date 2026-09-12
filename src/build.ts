@@ -18,7 +18,7 @@ const execFileAsync = promisify(execFile);
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const DEFAULT_TEMPLATE = resolve(dirname(fileURLToPath(import.meta.url)), "../subgraph");
 
-export type BuildStageName = "intent" | "scaffold" | "validate" | "compile";
+export type BuildStageName = "intent" | "scaffold" | "validate" | "dependencies" | "compile";
 export type BuildStage = {
   name: BuildStageName;
   status: "PASSED" | "SKIPPED" | "FAILED";
@@ -107,6 +107,8 @@ function copyTemplate(templateDir: string, outputDir: string, contract: string, 
     }
     writeFileSync(join(outputDir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
   }
+  const lockPath = join(templateDir, "package-lock.json");
+  if (existsSync(lockPath)) copyFileSync(lockPath, join(outputDir, "package-lock.json"));
 }
 
 function validateCandidate(outputDir: string, contract: string, startBlock: string): void {
@@ -122,6 +124,12 @@ function validateCandidate(outputDir: string, contract: string, startBlock: stri
 
 async function compileCandidate(outputDir: string, graphCommand: string): Promise<string> {
   try {
+    if (!existsSync(join(outputDir, "node_modules", "@graphprotocol", "graph-ts"))) {
+      await execFileAsync(process.env.NPM_CLI ?? "npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund"], {
+        cwd: outputDir,
+        maxBuffer: 4 * 1024 * 1024,
+      });
+    }
     await execFileAsync(graphCommand, ["codegen", "subgraph.yaml"], { cwd: outputDir, maxBuffer: 4 * 1024 * 1024 });
     await execFileAsync(graphCommand, ["build", "subgraph.yaml"], { cwd: outputDir, maxBuffer: 4 * 1024 * 1024 });
     return "Graph codegen and build completed";
@@ -146,8 +154,10 @@ export async function buildErc4626(request: BuildRequest): Promise<BuildResult> 
   stages.push({ name: "validate", status: "PASSED", detail: "manifest and required execution files validated" });
 
   if (request.compile === false) {
+    stages.push({ name: "dependencies", status: "SKIPPED", detail: "candidate dependency installation skipped with compile" });
     stages.push({ name: "compile", status: "SKIPPED", detail: "Graph codegen/build skipped by request" });
   } else {
+    stages.push({ name: "dependencies", status: "PASSED", detail: "candidate Graph dependencies will be installed if absent" });
     const detail = await compileCandidate(outputDir, request.graphCommand ?? process.env.GRAPH_CLI ?? "graph");
     stages.push({ name: "compile", status: "PASSED", detail });
   }
