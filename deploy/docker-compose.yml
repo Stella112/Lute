@@ -74,11 +74,11 @@ services:
     env_file:
       - .env
     ports:
-      - "127.0.0.1:8791:8791"
+      - "127.0.0.1:8793:8793"
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000
-      PAID_PORT: "8791"
+      PAID_PORT: "8793"
       PAID_PUBLIC_URL: ${PAID_PUBLIC_URL:-https://uselute.xyz}
 
 volumes:

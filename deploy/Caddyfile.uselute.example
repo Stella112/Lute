@@ -6,7 +6,7 @@ uselute.xyz, www.uselute.xyz {
 
   # Keep payment settlement isolated from the dashboard/API process.
   handle /v1/paid/* {
-    reverse_proxy 127.0.0.1:8791
+    reverse_proxy 127.0.0.1:8793
   }
 
   handle {
