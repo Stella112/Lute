@@ -39,14 +39,19 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 
 ## Bazantic
 
-- Active gateway URL: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com`
-- MCP endpoint: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com/mcp`
+- Active gateway URL: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com`
+- MCP endpoint: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp`
 - Gateway status: `active`; public MCP `tools/list` and read-only `info` call verified
-- Gateway operations: generated from `https://uselute.xyz/openapi.json`
-- Paid gateway smoke test: `NOT RECORDED AS PASSING` — Bazantic returned HTTP 400
-  (`request body must be valid JSON`) after the payment challenge; the identical
-  payload returned `VERIFIED` directly from Lute, so the paid forwarding path needs
-  provider-side investigation before it is shown as qualifying evidence.
+- Gateway operations: generated from `https://uselute.xyz/openapi.json`; the current
+  audit tools expose query-shaped top-level MCP arguments (`contract`, `fromBlock`,
+  `toBlock`, with optional `event` and `subgraph`).
+- Paid gateway smoke test: `NOT RECORDED AS PASSING` — a paid request has not been
+  re-run after the replacement gateway was created, so no paid success is claimed.
+- Historical provider issue: the previous active gateway
+  `374274w6xnchrppsi33r2y2xfy` returned HTTP 400 (`request body must be valid JSON`)
+  after its payment challenge. The replacement gateway was created with the corrected
+  query-shaped MCP schema; see `docs/judging/bazantic-support-report.md` for the
+  sanitized reproduction against the old gateway.
 - Verify Before Trust Recipe: `NOT RECORDED`
 - Bazantic account username: `NOT RECORDED`
 - Other sponsor service used by the Recipe: `NOT RECORDED`

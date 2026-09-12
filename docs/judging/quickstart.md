@@ -47,12 +47,16 @@ Useful read-only endpoints:
 
 The active Bazantic gateway is:
 
-`https://374274w6xnchrppsi33r2y2xfy.bazgateway.com/mcp`
+`https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp`
 
 It exposes Lute operations as MCP tools, including `auditVault`,
 `auditVaultV1`, `verifyCurrentCandidate`, `getVerification`,
 `getVerificationEvidence`, `getVerifiedManifest`, `listSupportedEvents`,
 `listIntegrityPacks`, and `getErc4626Pack`.
+
+The audit tools accept `contract`, `fromBlock`, and `toBlock` as top-level MCP
+arguments, with optional `event` and `subgraph` arguments. This shape lets the
+Bazantic gateway forward the paid request without depending on a JSON request body.
 
 MCP tool discovery is free. Audit execution through the gateway is pay-per-request,
 so a judge who wants to run a paid gateway call must use their own Bazantic account,

@@ -5,7 +5,7 @@ session tokens, RPC credentials, or payment signatures are included.
 
 ## Summary
 
-The active Bazantic gateway exposes Lute's MCP tools successfully. A read-only
+The previously active Bazantic gateway exposed Lute's MCP tools successfully. A read-only
 MCP `tools/list` request and the `info` tool call both return `200`.
 
 The same JSON audit payload succeeds directly against Lute and through the Baz
@@ -20,7 +20,8 @@ forwarded request reaches Lute as invalid JSON and returns HTTP `400`.
 - MCP URL: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com/mcp`
 - Upstream: `https://uselute.xyz`
 - OpenAPI spec: `https://uselute.xyz/openapi.json`
-- Gateway status: `active`
+- Gateway status at time of reproduction: `active` (the replacement gateway is now
+  documented in `docs/judging/quickstart.md` and `docs/judging/evidence.md`)
 
 ## Successful controls
 
