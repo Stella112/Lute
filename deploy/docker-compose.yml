@@ -77,6 +77,8 @@ services:
       - .env
     ports:
       - "127.0.0.1:8793:8793"
+    volumes:
+      - lute-runs:/app/.lute
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000

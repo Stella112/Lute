@@ -18,6 +18,9 @@ import { toJSON } from "../bigint.js";
 import { newRunId, Logger } from "../logger.js";
 import { resolveVerifierRpc } from "../rpc.js";
 import { makeSource } from "../sources.js";
+import { buildCandidateManifest } from "../candidate.js";
+import { evidenceRoot } from "../evidence.js";
+import { createVerificationRun, saveVerificationRun } from "../run-store.js";
 import { quote } from "./quote.js";
 import { summarize } from "../explain.js";
 import {
@@ -37,6 +40,7 @@ const PORT = Number(process.env.PAID_PORT ?? 8793);
 const PUBLIC_BASE_URL = (process.env.PAID_PUBLIC_URL ?? `http://localhost:${PORT}`).replace(/\/$/, "");
 const MAX_BLOCK_SPAN = parsePositiveBigInt(process.env.PAID_MAX_BLOCK_SPAN, DEFAULT_MAX_BLOCK_SPAN);
 const MAX_BODY_BYTES = parsePositiveNumber(process.env.PAID_MAX_BODY_BYTES, DEFAULT_MAX_BODY_BYTES);
+const CANDIDATE_DIR = process.env.LUTE_CANDIDATE_DIR ?? "subgraph";
 
 type Requirements = {
   scheme: "exact"; network: string; amount: string; payTo: string;
@@ -136,6 +140,16 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
     return send(res, 402, { x402Version: X402_VERSION, error: `settlement failed: ${settle.errorReason ?? "unknown"}`, accepts: [requirements] });
   }
 
+  // Persist the paid result in the same evidence store as free audits so the live
+  // dashboard can show the paid verification history after container restarts.
+  const candidate = buildCandidateManifest(CANDIDATE_DIR);
+  const stored = createVerificationRun({
+    report,
+    candidate,
+    evidenceRoot: report.evidenceRoot ?? evidenceRoot(report),
+  });
+  const file = saveVerificationRun(stored);
+
   const result = {
     paid: { transaction: settle.transaction, network: settle.network, payer: settle.payer, amount: q.tinybars, asset: ASSET_HBAR, tier: q.tier },
     verdict: report.verdict,
@@ -145,6 +159,8 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
       runId: report.runId, verdict: report.verdict, eventsChecked: report.eventsChecked,
       raw: report.rawEvidence?.eventCount ?? null, subgraph: report.subgraphEvidence?.recordCount ?? null,
       firstDivergence: report.firstDivergence,
+      evidenceRoot: stored.evidenceRoot,
+      file,
     },
   };
   send(res, 200, toJSON(result), { "X-PAYMENT-RESPONSE": Buffer.from(JSON.stringify(settle)).toString("base64") });

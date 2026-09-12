@@ -34,7 +34,7 @@ const report: AuditReport = {
 
 test("evidence root is deterministic", () => {
   assert.equal(evidenceRoot(report), evidenceRoot({ ...report }));
-  const withUndefinedOptionalFields = { ...report, checks: [{ ...report.checks[0], expected: undefined, observed: undefined }] };
+  const withUndefinedOptionalFields = { ...report, checks: [{ ...report.checks[0]!, expected: undefined, observed: undefined }] };
   assert.equal(evidenceRoot(withUndefinedOptionalFields), evidenceRoot(JSON.parse(JSON.stringify(withUndefinedOptionalFields))));
 });
 
