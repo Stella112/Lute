@@ -58,6 +58,8 @@ services:
       - graph-node
     ports:
       - "127.0.0.1:8788:8788" # dashboard (localhost only; SSH-tunnel to view)
+    volumes:
+      - lute-runs:/app/.lute
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000
@@ -84,3 +86,4 @@ services:
 volumes:
   postgres-data:
   ipfs-data:
+  lute-runs:
