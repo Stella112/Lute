@@ -4,9 +4,9 @@
 // accepts a model-supplied verdict or a caller-controlled filesystem path.
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, resolve as resolvePath, sep } from "node:path";
 
 import { runAudit } from "./audit.js";
 import { ERC4626_EVENTS } from "./abi.js";
@@ -19,7 +19,9 @@ import { makeSource } from "./sources.js";
 import { createVerificationRun, loadVerificationRun, saveVerificationRun } from "./run-store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const HTML = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8");
+const APP_ROOT = join(__dirname, "..");
+const WEB_DIR = process.env.LUTE_WEB_DIR ?? join(APP_ROOT, "web", "dist");
+const LEGACY_HTML = readFileSync(join(APP_ROOT, "public", "index.html"), "utf8");
 let OPENAPI: string | null = null;
 try {
   OPENAPI = readFileSync(join(__dirname, "..", "bazantic", "openapi.json"), "utf8");
@@ -126,10 +128,52 @@ function isSafeRunId(value: string): boolean {
   return /^[A-Za-z0-9_-]+$/.test(value);
 }
 
+const FRONTEND_TYPES: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+};
+
+function frontendFile(pathname: string): { file: string; fallback: boolean } | null {
+  if (!existsSync(join(WEB_DIR, "index.html"))) return null;
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null;
+  }
+  if (decoded.includes("\0")) return null;
+
+  const root = resolvePath(WEB_DIR);
+  const requested = resolvePath(root, `.${decoded === "/" ? "/index.html" : decoded}`);
+  const pathRelativeToRoot = relative(root, requested);
+  if (pathRelativeToRoot.startsWith(`..${sep}`) || pathRelativeToRoot === ".." || pathRelativeToRoot.includes(`${sep}..${sep}`)) return null;
+  if (existsSync(requested) && statSync(requested).isFile()) return { file: requested, fallback: false };
+  return { file: join(root, "index.html"), fallback: true };
+}
+
+function serveFrontend(res: ServerResponse, pathname: string): void {
+  const target = frontendFile(pathname);
+  if (!target) return send(res, 200, LEGACY_HTML, "text/html; charset=utf-8");
+  const extension = target.file.slice(target.file.lastIndexOf(".")).toLowerCase();
+  const type = FRONTEND_TYPES[extension] ?? "application/octet-stream";
+  res.writeHead(200, {
+    "content-type": type,
+    "cache-control": target.fallback ? "no-store" : "public, max-age=31536000, immutable",
+  });
+  res.end(readFileSync(target.file));
+}
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
-    if (req.method === "GET" && url.pathname === "/") return send(res, 200, HTML, "text/html; charset=utf-8");
     if (req.method === "GET" && url.pathname === "/openapi.json") return OPENAPI ? send(res, 200, OPENAPI) : send(res, 404, { error: "openapi spec not bundled" });
     if (req.method === "GET" && url.pathname === "/api/events") return send(res, 200, Object.values(ERC4626_EVENTS).map((e) => ({ name: e.name, signature: e.signature, topic0: e.topic0 })));
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs") return send(res, 200, { packs: [packManifest()] });
@@ -156,6 +200,11 @@ const server = createServer(async (req, res) => {
       const run = createVerificationRun({ report, candidate, evidenceRoot: report.evidenceRoot ?? evidenceRoot(report) });
       const file = saveVerificationRun(run);
       return send(res, report.verdict === "VERIFIED" ? 201 : 200, { ...run, file });
+    }
+
+    if (req.method === "GET" && !url.pathname.startsWith("/api/") && !url.pathname.startsWith("/v1/")) {
+      serveFrontend(res, url.pathname);
+      return;
     }
 
     return send(res, 404, { error: "not found" });

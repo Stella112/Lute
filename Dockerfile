@@ -1,5 +1,12 @@
-# Lute app image — runs the dashboard / MCP / watch runner. Reuses the Phase 1 engine
-# unchanged; tsx executes the TypeScript directly.
+# Lute app image — runs the audit API and serves the production React frontend.
+FROM node:22-slim AS web-builder
+
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web ./
+RUN npm run build
+
 FROM node:22-slim
 
 WORKDIR /app
@@ -12,6 +19,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
 COPY public ./public
+COPY --from=web-builder /web/dist ./web/dist
 COPY bazantic ./bazantic
 COPY integrity-packs ./integrity-packs
 COPY lute.targets.example.json ./
