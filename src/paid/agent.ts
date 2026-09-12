@@ -7,7 +7,8 @@
 // Env: HEDERA_OPERATOR_ID/HEDERA_OPERATOR_KEY (funds a one-time agent account if
 // HEDERA_AGENT_ID/HEDERA_AGENT_KEY are not set), PAID_URL (default http://localhost:8793).
 
-import { Client, PrivateKey, Hbar, AccountCreateTransaction, AccountBalanceQuery } from "@hiero-ledger/sdk";
+import { Client, PrivateKey, Hbar, AccountBalanceQuery } from "@x402/hedera";
+import { AccountCreateTransaction } from "@hiero-ledger/sdk";
 import { ExactHederaScheme, createClientHederaSigner, HEDERA_TESTNET_CAIP2 } from "@x402/hedera";
 import { wrapFetchWithPaymentFromConfig, decodePaymentResponseHeader } from "@x402/fetch";
 
@@ -48,7 +49,7 @@ async function ensureAgent(): Promise<{ id: string; key: string }> {
 
 async function main() {
   const agent = await ensureAgent();
-  const signer = createClientHederaSigner(agent.id, PrivateKey.fromStringECDSA(agent.key), { network: "testnet" });
+  const signer = createClientHederaSigner(agent.id, PrivateKey.fromStringECDSA(agent.key), { network: HEDERA_TESTNET_CAIP2 });
   const payFetch = wrapFetchWithPaymentFromConfig(fetch, {
     schemes: [{ network: HEDERA_TESTNET_CAIP2, client: new ExactHederaScheme(signer) }],
     spendControls: false, // paying in native HBAR (non-default asset) on testnet
