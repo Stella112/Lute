@@ -22,6 +22,7 @@ COPY public ./public
 COPY --from=web-builder /web/dist ./web/dist
 COPY bazantic ./bazantic
 COPY integrity-packs ./integrity-packs
+COPY subgraph ./subgraph
 COPY lute.targets.example.json ./
 
 EXPOSE 8788 8793

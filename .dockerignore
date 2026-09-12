@@ -1,7 +1,9 @@
 node_modules
 .git
 *.log
-subgraph
+subgraph/node_modules
+subgraph/build
+subgraph/generated
 evidence_*.json
 .github
 deploy
