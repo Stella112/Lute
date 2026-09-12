@@ -381,7 +381,7 @@ unchanged verifier.
 
 The verifier, MCP, watch runner, dashboard, HCS attestation, candidate hashing/gate,
 real Graph Node path, generic x402 path, and the Blocky402/Hedera paid-service code are
-implemented. Live Subgraph Studio deployment, Substreams differential verification,
-AI build/repair orchestration, continuous incident persistence, and a recorded real
-paid Hedera request remain separate demo/production work and must not be presented as
-complete until their evidence is collected.
+implemented. The honest Lute subgraph is deployed to Graph Studio on Base and has been
+smoke-queried successfully. AI build/repair orchestration, continuous incident
+persistence, and a recorded real paid Hedera request remain separate demo/production
+work and must not be presented as complete until their evidence is collected.

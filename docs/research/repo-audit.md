@@ -30,7 +30,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Deployment gate blocks bad/stale | ✅ pure backend decision + CLI gate; no persistent deployment service yet | `src/gate.ts`, `src/cli.ts`, `test/gate.test.ts` |
 | Build workflow (NL → scaffold → deploy) | ❌ not built (Graph skills not wired into a build pipeline) | — |
 | Repair workflow + reverification | 🟡 conceptual — bugged/honest mappings exist; no RepairContext pipeline | — |
-| Deploy exact verified candidate to Studio + smoke query | 🟡 self-hosted graph-node deploy done; **Subgraph Studio** deploy not done | `deploy/`, `subgraph/` |
+| Deploy exact verified candidate to Studio + smoke query | ✅ honest `v0.1.0` deployed to Graph Studio on Base; live `_meta` and `DepositEvent` queries verified | `deploy/`, `subgraph/` |
 | External Audit for a supported deployment | ✅ (real, via UI + backend) | `web/.../ExternalAudit.tsx`, `/api/audit` |
 | Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
 | Lute MCP | ✅ (audit/explain/supported_events) — smaller tool set than §37 | `src/mcp.ts` |
@@ -49,10 +49,9 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 1. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
 2. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
 3. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
-4. **Studio deployment + smoke test** — §12/31/32.
-5. **Bazantic live Gateway + Recipe** — §22/53/54.
-6. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
-7. `openapi/lute.yaml` alignment and the remaining architecture docs.
+4. **Bazantic live Gateway + Recipe** — §22/53/54.
+5. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
+6. `openapi/lute.yaml` alignment and the remaining architecture docs.
 
 ## Invariant check on existing verifier
 - INVARIANT A (candidate vs verifier independence): ✅ verifier decodes raw logs; never runs candidate mapping.
