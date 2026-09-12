@@ -16,7 +16,8 @@ import { toJSON } from "./bigint.js";
 import { newRunId, Logger } from "./logger.js";
 import { resolveVerifierRpc } from "./rpc.js";
 import { makeSource } from "./sources.js";
-import { createVerificationRun, listVerificationRuns, loadVerificationRun, saveVerificationRun } from "./run-store.js";
+import { decideGate } from "./gate.js";
+import { createVerificationRun, freshnessFor, listVerificationRuns, loadVerificationRun, requiredStrongChecksPassed, saveVerificationRun } from "./run-store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -126,6 +127,43 @@ function packManifest(): Record<string, unknown> {
   };
 }
 
+function deploymentGateFor(latest: ReturnType<typeof listVerificationRuns>[number] | null) {
+  if (!latest) return null;
+  try {
+    const candidate = buildCandidateManifest(CANDIDATE_DIR);
+    const decision = decideGate({
+      verdict: latest.report.verdict,
+      candidateHash: candidate.candidateHash,
+      verifiedCandidateHash: latest.candidateHash,
+      requiredStrongChecksPassed: requiredStrongChecksPassed(latest.report.checks),
+      sourcesComplete: latest.coverage.sourcesComplete,
+      freshnessOk: freshnessFor(latest),
+      revoked: latest.revoked,
+    });
+    return {
+      ...decision,
+      candidateHash: candidate.candidateHash,
+      verifiedCandidateHash: latest.candidateHash,
+      verificationRunId: latest.runId,
+      integrityPack: `${latest.integrityPack.id}@${latest.integrityPack.version}`,
+      verdict: latest.report.verdict,
+      sourcesComplete: latest.coverage.sourcesComplete,
+    };
+  } catch {
+    return {
+      state: "INCOMPLETE" as const,
+      allowed: false,
+      reasons: ["current candidate could not be loaded for gate evaluation"],
+      candidateHash: "",
+      verifiedCandidateHash: latest.candidateHash,
+      verificationRunId: latest.runId,
+      integrityPack: `${latest.integrityPack.id}@${latest.integrityPack.version}`,
+      verdict: latest.report.verdict,
+      sourcesComplete: false,
+    };
+  }
+}
+
 function dashboardSnapshot() {
   const runs = listVerificationRuns();
   const latest = runs[0] ?? null;
@@ -141,6 +179,7 @@ function dashboardSnapshot() {
       inconclusiveRuns: runs.filter((run) => run.verdict === "INCONCLUSIVE").length,
       lastVerificationAt: latest?.createdAt ?? null,
     },
+    gate: deploymentGateFor(latest),
     latest,
     runs,
   };
@@ -202,6 +241,7 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs") return send(res, 200, { packs: [packManifest()] });
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs/erc4626@1") return send(res, 200, packManifest());
     if (req.method === "GET" && url.pathname === "/v1/dashboard") return send(res, 200, dashboardSnapshot());
+    if (req.method === "GET" && url.pathname === "/v1/deployment-gate") return send(res, 200, { gate: deploymentGateFor(listVerificationRuns()[0] ?? null) });
 
     const verificationMatch = url.pathname.match(/^\/v1\/verifications\/([^/]+)(?:\/(evidence|manifest))?$/);
     if (req.method === "GET" && verificationMatch) {

@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Badge, StatusBadge } from "../../components/ui";
 import { getDashboard } from "../../lib/api";
-import type { DashboardSnapshot, VerificationRun } from "../../lib/types";
+import type { DashboardSnapshot, DeploymentGateSnapshot, VerificationRun } from "../../lib/types";
 
 const STAT_ICON: Record<string, typeof Boxes> = {
   verified: Boxes, failed: AlertTriangle, checks: ShieldCheck, last: Clock,
@@ -39,6 +39,13 @@ function manifestFor(run: VerificationRun | null): string {
   }, null, 2);
 }
 
+function gateTone(gate: DeploymentGateSnapshot | null): "success" | "danger" | "warning" | "neutral" {
+  if (!gate) return "neutral";
+  if (gate.state === "ALLOWED") return "success";
+  if (gate.state === "INCOMPLETE") return "warning";
+  return "danger";
+}
+
 export function Overview({ onNavigate }: { onNavigate: (section: string) => void }) {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [error, setError] = useState("");
@@ -49,6 +56,7 @@ export function Overview({ onNavigate }: { onNavigate: (section: string) => void
   }, []);
 
   const latest = snapshot?.latest ?? null;
+  const gate = snapshot?.gate ?? null;
   const manifest = useMemo(() => manifestFor(latest), [latest]);
   const stats = snapshot ? [
     { key: "verified", label: "Verified Runs", value: String(snapshot.stats.verifiedRuns), delta: `${snapshot.stats.totalRuns} total runs`, tone: snapshot.stats.verifiedRuns ? "up" : "muted" },
@@ -109,11 +117,14 @@ export function Overview({ onNavigate }: { onNavigate: (section: string) => void
         </div>
 
         <div className="panel">
-          <div className="panel__h"><h2><FileText size={18} /> Deployment Gate</h2><Badge tone="neutral">Not configured</Badge></div>
-          <p className="gate__note">Lute has not received a deployment-gate request for this instance. Verification results remain evidence-backed, but no deployment is claimed as allowed.</p>
-          {latest && <div className="gate__row"><span><Fingerprint size={15} /> Latest candidate hash</span><span className="gate__val mono">{latest.candidateHash.slice(0, 16)}…</span></div>}
-          <div className="gate__row"><span><Package size={15} /> Integrity pack</span><span className="gate__val mono">{latest ? `${latest.integrityPack.id}@${latest.integrityPack.version}` : "—"}</span></div>
-          <div className="gate__row"><span><ShieldCheck size={15} /> Policy</span><Badge tone="neutral">Verification only</Badge></div>
+          <div className="panel__h"><h2><FileText size={18} /> Deployment Gate</h2><Badge tone={gateTone(gate)}>{gate?.state ?? "INCOMPLETE"}</Badge></div>
+          <p className="gate__note">{gate ? gate.allowed ? "The exact current candidate matches the verified run and satisfies the deployment policy." : gate.reasons.join("; ") : "Run a verification before evaluating the deployment gate."}</p>
+          {gate && <>
+            <div className="gate__row"><span><Fingerprint size={15} /> Current candidate hash</span><span className="gate__val mono">{gate.candidateHash ? `${gate.candidateHash.slice(0, 16)}…` : "unavailable"}</span></div>
+            <div className="gate__row"><span><Fingerprint size={15} /> Verified candidate hash</span><span className="gate__val mono">{gate.verifiedCandidateHash ? `${gate.verifiedCandidateHash.slice(0, 16)}…` : "none"}</span></div>
+            <div className="gate__row"><span><Package size={15} /> Integrity pack</span><span className="gate__val mono">{gate.integrityPack}</span></div>
+            <div className="gate__row"><span><ShieldCheck size={15} /> Verification</span><span className="gate__val mono">{gate.verificationRunId}</span></div>
+          </>}
         </div>
       </div>
 

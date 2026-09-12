@@ -38,6 +38,18 @@ export type DeploymentGate = {
   finalVerdict: Verdict;
 };
 
+export type DeploymentGateSnapshot = {
+  state: DeploymentState;
+  allowed: boolean;
+  reasons: string[];
+  candidateHash: string;
+  verifiedCandidateHash: string | null;
+  verificationRunId: string;
+  integrityPack: string;
+  verdict: Verdict;
+  sourcesComplete: boolean;
+};
+
 export type IntegrityPack = {
   id: string;
   name: string;
@@ -76,6 +88,7 @@ export type DashboardSnapshot = {
     inconclusiveRuns: number;
     lastVerificationAt: string | null;
   };
+  gate: DeploymentGateSnapshot | null;
   latest: VerificationRun | null;
   runs: VerificationRun[];
 };
