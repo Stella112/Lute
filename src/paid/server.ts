@@ -78,6 +78,28 @@ function send(res: ServerResponse, status: number, body: unknown, headers: Recor
   res.end(typeof body === "string" ? body : JSON.stringify(body));
 }
 
+function buildPaymentRequired(resource: string, error: string, requirements: Requirements) {
+  const body = {
+    x402Version: X402_VERSION as 2,
+    error,
+    resource: {
+      url: resource,
+      description: "Lute paid verification",
+      mimeType: "application/json",
+    },
+    accepts: [requirements],
+  };
+  return {
+    body,
+    header: Buffer.from(JSON.stringify(body), "utf8").toString("base64"),
+  };
+}
+
+function sendPaymentRequired(res: ServerResponse, resource: string, error: string, requirements: Requirements) {
+  const paymentRequired = buildPaymentRequired(resource, error, requirements);
+  return send(res, 402, paymentRequired.body, { "PAYMENT-REQUIRED": paymentRequired.header });
+}
+
 async function readBody(req: IncomingMessage): Promise<string> {
   const declared = req.headers["content-length"];
   if (declared && /^\d+$/.test(declared) && Number(declared) > MAX_BODY_BYTES) {
@@ -109,20 +131,20 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
 
   const header = req.headers["x-payment"];
   if (!header || typeof header !== "string") {
-    return send(res, 402, { x402Version: X402_VERSION, error: "payment required", accepts: [requirements] });
+    return sendPaymentRequired(res, resource, "payment required", requirements);
   }
 
   let payment: unknown;
   try {
     payment = JSON.parse(Buffer.from(header, "base64").toString("utf8"));
   } catch (e) {
-    return send(res, 402, { x402Version: X402_VERSION, error: `invalid X-PAYMENT: ${(e as Error).message}`, accepts: [requirements] });
+    return sendPaymentRequired(res, resource, `invalid X-PAYMENT: ${(e as Error).message}`, requirements);
   }
 
   // 1) verify the payment via Blocky402 (does not run Lute's business logic)
   const verify = (await facilitator("/verify", payment, requirements)) as { isValid: boolean; payer?: string; invalidReason?: string };
   if (!verify.isValid) {
-    return send(res, 402, { x402Version: X402_VERSION, error: `payment invalid: ${verify.invalidReason ?? "unknown"}`, accepts: [requirements] });
+    return sendPaymentRequired(res, resource, `payment invalid: ${verify.invalidReason ?? "unknown"}`, requirements);
   }
 
   // 2) run the REAL verification compute
@@ -137,7 +159,7 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
   // 3) settle on-chain; only release the result if settlement actually succeeds
   const settle = (await facilitator("/settle", payment, requirements)) as { success: boolean; transaction?: string; network?: string; payer?: string; errorReason?: string };
   if (!settle.success) {
-    return send(res, 402, { x402Version: X402_VERSION, error: `settlement failed: ${settle.errorReason ?? "unknown"}`, accepts: [requirements] });
+    return sendPaymentRequired(res, resource, `settlement failed: ${settle.errorReason ?? "unknown"}`, requirements);
   }
 
   // Persist the paid result in the same evidence store as free audits so the live
@@ -206,4 +228,4 @@ function parsePositiveNumber(value: string | undefined, fallback: number): numbe
   return parsed;
 }
 
-export { server, quote, loadFeePayer, parsePaidAuditBody, type PaidAuditBody };
+export { server, quote, loadFeePayer, parsePaidAuditBody, buildPaymentRequired, type PaidAuditBody };

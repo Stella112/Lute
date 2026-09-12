@@ -5,6 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { quote } from "../src/paid/quote.js";
+import { buildPaymentRequired } from "../src/paid/server.js";
 import { PaidRequestError, parsePaidAuditBody } from "../src/paid/validation.js";
 
 const CONTRACT = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
@@ -43,4 +44,22 @@ test("quote has deterministic boundary tiers and rejects invalid ranges", () => 
   assert.equal(quote(1n, 2001n).tier, "standard");
   assert.equal(quote(1n, 20001n).tier, "deep");
   assert.throws(() => quote(2n, 1n), /invalid block range/);
+});
+
+test("paid server emits an x402 v2 payment-required header", () => {
+  const requirements = {
+    scheme: "exact" as const,
+    network: "hedera:testnet",
+    amount: "50000000",
+    payTo: "0.0.123",
+    maxTimeoutSeconds: 300,
+    asset: "0.0.0",
+    resource: "https://uselute.xyz/v1/paid/audits",
+    description: "Lute quick verification",
+    mimeType: "application/json",
+  };
+  const paymentRequired = buildPaymentRequired(requirements.resource, "payment required", requirements);
+  assert.equal(paymentRequired.body.x402Version, 2);
+  assert.equal(paymentRequired.body.resource.url, requirements.resource);
+  assert.deepEqual(JSON.parse(Buffer.from(paymentRequired.header, "base64").toString("utf8")), paymentRequired.body);
 });
