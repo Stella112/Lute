@@ -88,4 +88,46 @@ export const demo = {
       { label: "Attestation Service", state: "Healthy", value: "99.9%" },
     ];
   },
+  stats(): { key: string; label: string; value: string; delta: string; tone: "up" | "warn" | "muted" }[] {
+    return [
+      { key: "verified", label: "Verified Deployments", value: "24", delta: "+3 this week", tone: "up" },
+      { key: "incidents", label: "Active Incidents", value: "1", delta: "+1 since last week", tone: "warn" },
+      { key: "integrity", label: "Integrity Coverage", value: "96.4%", delta: "+2.1%", tone: "up" },
+      { key: "last", label: "Last Verification", value: "12m ago", delta: "Build #4287", tone: "muted" },
+    ];
+  },
+  divergence(): { block: string; tx: string; log: number; expected: string; indexed: string; explanation: string; violation: string } {
+    return {
+      block: "20,123,456",
+      tx: "0x8f3c…2a9d1e",
+      log: 12,
+      expected: "Transfer(address,uint256)",
+      indexed: "Transfer(address,uint128)",
+      explanation: "Amount type mismatch in event indexing. Detected by the schema verifier.",
+      violation: "SCHEMA_MISMATCH",
+    };
+  },
+  manifest(): { json: string; summary: { k: string; v: string; badge?: boolean }[] } {
+    return {
+      json: [
+        "{",
+        '  "name": "edge-market-subgraph",',
+        '  "version": "1.0.3",',
+        '  "commit": "3a4f2c1e9d8a7...",',
+        '  "integrityPack": "erc4626@1",',
+        '  "blockRange": "51115000-51125000",',
+        '  "eventsChecked": 1842,',
+        '  "verdict": "VERIFIED",',
+        '  "evidenceRoot": "ipfs://bafy..."',
+        "}",
+      ].join("\n"),
+      summary: [
+        { k: "Candidate Hash", v: "3a4f2c1e9d8a7…" },
+        { k: "Integrity Pack", v: "erc4626@1" },
+        { k: "Test Coverage", v: "96.4%" },
+        { k: "Policy Compliance", v: "Pass", badge: true },
+        { k: "Final Verdict", v: "Verified", badge: true },
+      ],
+    };
+  },
 };

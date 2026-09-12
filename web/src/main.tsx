@@ -6,6 +6,7 @@ import { App } from "./App";
 import "./styles/tokens.css";
 import "./styles/components.css";
 import "./styles/landing.css";
+import "./styles/dashboard.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
