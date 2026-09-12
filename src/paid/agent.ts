@@ -10,6 +10,7 @@
 import { Client, PrivateKey, Hbar, AccountBalanceQuery } from "@x402/hedera";
 import { AccountCreateTransaction } from "@hiero-ledger/sdk";
 import { ExactHederaScheme, createClientHederaSigner } from "@x402/hedera";
+import { buildPaymentPayload } from "./payment-payload.js";
 
 const PAID_URL = (process.env.PAID_URL ?? "http://localhost:8793").replace(/\/$/, "");
 
@@ -75,18 +76,22 @@ async function main() {
     console.log(JSON.stringify({ status: r1.status, result: await r1.json(), settlement: null }, null, 2));
     return;
   }
-  const challenge = (await r1.json()) as { accepts: Record<string, unknown>[] };
+  const challenge = (await r1.json()) as {
+    x402Version: number;
+    resource?: Record<string, unknown>;
+    accepts: Record<string, unknown>[];
+  };
   const requirements = challenge.accepts[0]!;
   process.stderr.write(`received 402; signing payment of ${requirements.amount} tinybar to ${requirements.payTo} on ${requirements.network}…\n`);
 
   // 2) build + sign the Hedera payment payload with the exact scheme
   const result = await scheme.createPaymentPayload(2, requirements as never);
-  const paymentPayload = {
-    x402Version: 2,
-    accepted: requirements,
-    payload: result.payload,
-    ...(result.extensions ? { extensions: result.extensions } : {}),
-  };
+  const paymentPayload = buildPaymentPayload(
+    challenge,
+    requirements,
+    result.payload as Record<string, unknown>,
+    result.extensions as Record<string, unknown> | undefined,
+  );
   const xPayment = Buffer.from(JSON.stringify(paymentPayload)).toString("base64");
 
   // 3) retry with PAYMENT-SIGNATURE -> server verifies + settles via Blocky402, runs the audit

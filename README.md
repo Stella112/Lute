@@ -390,17 +390,17 @@ The verifier, MCP, watch runner, dashboard, HCS attestation, candidate hashing/g
 real Graph Node path, monitoring incidents, generic x402 path, and the Blocky402/Hedera paid-service code are
 implemented. The honest Lute subgraph is deployed to Graph Studio on Base and has been
 smoke-queried successfully. The first deterministic Base ERC-4626 Build workflow now
-scaffolds and compiles candidates; broader AI build/repair orchestration, automated
-scheduling, and a recorded real paid Hedera request remain separate
-demo/production work and must not be presented as complete until their evidence is
-collected.
+scaffolds and compiles candidates. A guarded self-hosted Graph Node deploy command is
+also available; a recorded real paid Hedera request remains pending the external
+Blocky402 facilitator signer repair and must not be presented as complete until its
+settlement evidence is collected.
 
 ## Build and repair workflow
 
 The first supported build intent is a Base ERC-4626 vault. Lute creates a fresh
-candidate from the reviewed honest template, validates its manifest, optionally runs
-Graph codegen/build, and computes the candidate hash. It does not self-verify or deploy:
-those steps remain explicit and are bound by the deployment gate.
+ candidate from the reviewed honest template, validates its manifest, optionally runs
+ Graph codegen/build, and computes the candidate hash. Verification and deployment remain
+ explicit and are bound by the deployment gate.
 
 ```bash
 npm run lute -- build \
@@ -413,3 +413,25 @@ Use `--compile false` when Graph CLI is unavailable. After a failed Verification
 produce deterministic repair instructions with `lute repair --file <run.json>`. The
 optional `--apply-known-fix` only applies the narrow ERC-4626 non-unique entity-id fix;
 the candidate must then be rehashed and reverified by the unchanged verifier.
+
+After a VERIFIED run, deploy that exact candidate to a self-hosted Graph Node:
+
+```bash
+npm run lute -- deploy \
+  --candidate subgraph \
+  --run .lute/runs/<VerificationRun>.json \
+  --name lute/steak-honest \
+  --dry-run
+
+# Review the plan, then execute it explicitly with --yes.
+npm run lute -- deploy \
+  --candidate subgraph \
+  --run .lute/runs/<VerificationRun>.json \
+  --name lute/steak-honest \
+  --yes
+```
+
+The command runs codegen, build, create, and deploy only after the candidate hash,
+verified hash, verdict, source completeness, freshness, and revocation checks allow it.
+It writes a local ignored receipt under `.lute/deployments/`. Graph Studio publishing
+remains an operator action using the Studio deploy key; never commit that key.

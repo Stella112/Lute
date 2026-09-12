@@ -10,7 +10,7 @@
 // --subgraph local:swap-fields   ...assets/shares swapped
 // --subgraph local:duplicate     ...duplicate entity emitted
 
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { runAudit } from "./audit.js";
 import { newRunId, Logger } from "./logger.js";
@@ -21,6 +21,7 @@ import { explainReport } from "./explain.js";
 import { publishAttestation, isHederaConfigured } from "./hedera.js";
 import { buildCandidateManifest, shortHash } from "./candidate.js";
 import { decideGate } from "./gate.js";
+import { buildDeploymentPlan, executeDeploymentPlan } from "./deploy.js";
 import type { AuditReport, CheckResult } from "./types.js";
 import { toJSON } from "./bigint.js";
 import { evidenceRoot } from "./evidence.js";
@@ -164,6 +165,82 @@ async function runBuild(rest: string[]): Promise<number> {
   return 0;
 }
 
+function evaluateDeploymentGate(candidateDir: string, verifiedRunPath: string) {
+  const manifest = buildCandidateManifest(candidateDir);
+  const verifiedRun = loadVerificationRun(verifiedRunPath);
+  const report = verifiedRun.report;
+  const gate = decideGate({
+    verdict: report.verdict,
+    candidateHash: manifest.candidateHash,
+    verifiedCandidateHash: verifiedRun.candidateHash,
+    requiredStrongChecksPassed: requiredStrongChecksPassed(report.checks),
+    sourcesComplete: verifiedRun.coverage?.sourcesComplete ?? (report.verdict !== "INCONCLUSIVE" && !!report.rawEvidence && !!report.subgraphEvidence),
+    revoked: verifiedRun.revoked,
+    freshnessOk: freshnessFor(verifiedRun),
+  });
+  return { manifest, verifiedRun, gate };
+}
+
+async function runDeploy(rest: string[]): Promise<number> {
+  const args = parseArgs(rest);
+  const candidateDir = args.candidate ?? "subgraph";
+  const verifiedRunPath = args.run ?? args["verification-file"];
+  if (!verifiedRunPath) throw new Error("--run <VerificationRun.json> is required; deploy never self-verifies a candidate");
+
+  // Evaluate before constructing or executing any external command.
+  const { manifest, verifiedRun, gate } = evaluateDeploymentGate(candidateDir, verifiedRunPath);
+  if (!gate.allowed) {
+    const blocked = { candidate: manifest, verificationRunId: verifiedRun.runId, gate };
+    if (args.json === "true") process.stdout.write(toJSON(blocked) + "\n");
+    else process.stdout.write(["LUTE DEPLOY", "", `GATE: ${gate.state} (deployment blocked)`, `Reason: ${gate.reasons.join("; ")}`].join("\n") + "\n");
+    return 2;
+  }
+
+  const name = args.name ?? "lute/steak-honest";
+  const manifestFile = args.manifest ?? "subgraph.yaml";
+  const node = args.node ?? process.env.GRAPH_NODE_ADMIN ?? "http://localhost:8020";
+  const ipfs = args.ipfs ?? process.env.GRAPH_IPFS ?? "http://localhost:5001";
+  const versionLabel = args["version-label"] ?? `lute-${verifiedRun.runId}`;
+  const plan = buildDeploymentPlan({
+    graphCommand: args["graph-command"] ?? process.env.GRAPH_COMMAND ?? "graph",
+    node,
+    ipfs,
+    name,
+    manifest: manifestFile,
+    versionLabel,
+  });
+
+  if (args["dry-run"] === "true") {
+    const preview = { candidate: manifest, verificationRunId: verifiedRun.runId, gate, plan };
+    if (args.json === "true") process.stdout.write(toJSON(preview) + "\n");
+    else process.stdout.write(["LUTE DEPLOY (DRY RUN)", "", `Candidate: ${manifest.candidateHash}`, `Verification: ${verifiedRun.runId}`, "", ...plan.map((step) => `- ${step.command} ${step.args.join(" ")}`)].join("\n") + "\n");
+    return 0;
+  }
+  if (args.yes !== "true") throw new Error("deployment is an external state change; re-run with --yes or use --dry-run");
+
+  const results = await executeDeploymentPlan(plan, manifest.root);
+  const receipt = {
+    schemaVersion: 1,
+    deployedAt: new Date().toISOString(),
+    target: "graph-node",
+    name,
+    node,
+    ipfs,
+    versionLabel,
+    candidateHash: manifest.candidateHash,
+    verificationRunId: verifiedRun.runId,
+    steps: results.map(({ purpose, command, args: commandArgs, skipped }) => ({ purpose, command, args: commandArgs, skipped: skipped ?? false })),
+  };
+  const output = args.output ?? `.lute/deployments/${verifiedRun.runId}.json`;
+  const separator = output.includes("\\") ? "\\" : "/";
+  const parent = output.slice(0, output.lastIndexOf(separator));
+  if (parent) mkdirSync(parent, { recursive: true });
+  writeFileSync(output, JSON.stringify(receipt, null, 2) + "\n", "utf8");
+  if (args.json === "true") process.stdout.write(toJSON({ receipt, output }) + "\n");
+  else process.stdout.write(["LUTE DEPLOY", "", `Target:       graph-node`, `Name:         ${name}`, `Candidate:    ${manifest.candidateHash}`, `Verification: ${verifiedRun.runId}`, `Receipt:      ${output}`, "", "Deployment completed after the gate allowed the exact verified candidate."].join("\n") + "\n");
+  return 0;
+}
+
 function runRepair(rest: string[]): number {
   const args = parseArgs(rest);
   if (!args.file) throw new Error("--file <VerificationRun.json> is required for repair");
@@ -189,18 +266,8 @@ async function runGate(rest: string[]): Promise<number> {
   if (!verifiedRunPath) throw new Error("--run <VerificationRun.json> is required; gate never self-verifies a candidate");
 
   // Hash the exact candidate that would be deployed and load a prior run.
-  const manifest = buildCandidateManifest(candidateDir);
-  const verifiedRun = loadVerificationRun(verifiedRunPath);
+  const { manifest, verifiedRun, gate } = evaluateDeploymentGate(candidateDir, verifiedRunPath);
   const report = verifiedRun.report;
-  const gate = decideGate({
-    verdict: report.verdict,
-    candidateHash: manifest.candidateHash,
-    verifiedCandidateHash: verifiedRun.candidateHash,
-    requiredStrongChecksPassed: requiredStrongChecksPassed(report.checks),
-    sourcesComplete: verifiedRun.coverage?.sourcesComplete ?? (report.verdict !== "INCONCLUSIVE" && !!report.rawEvidence && !!report.subgraphEvidence),
-    revoked: verifiedRun.revoked,
-    freshnessOk: freshnessFor(verifiedRun),
-  });
 
   if (quiet) {
     process.stdout.write(toJSON({ candidate: manifest, verifiedRun, gate }) + "\n");
@@ -259,9 +326,10 @@ async function main(): Promise<number> {
   if (cmd === "explain") return runExplain(rest);
   if (cmd === "attest") return runAttest(rest);
   if (cmd === "gate") return runGate(rest);
+  if (cmd === "deploy") return runDeploy(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute build  --intent \"Build an ERC-4626 indexer on Base for 0x..\" --start-block N --output <dir> [--compile false] [--json]\n  lute repair --file <VerificationRun.json> [--candidate <dir>] [--apply-known-fix] [--json]\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|substreams|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
+      "usage:\n  lute build  --intent \"Build an ERC-4626 indexer on Base for 0x..\" --start-block N --output <dir> [--compile false] [--json]\n  lute repair --file <VerificationRun.json> [--candidate <dir>] [--apply-known-fix] [--json]\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|substreams|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute deploy --candidate <dir> --run <VerificationRun.json> --name lute/steak-honest [--dry-run|--yes]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }

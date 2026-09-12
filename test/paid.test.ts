@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 
 import { quote } from "../src/paid/quote.js";
 import { buildPaymentRequired } from "../src/paid/server.js";
+import { buildPaymentPayload } from "../src/paid/payment-payload.js";
 import { PaidRequestError, parsePaidAuditBody } from "../src/paid/validation.js";
 
 const CONTRACT = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
@@ -60,4 +61,42 @@ test("paid server emits an x402 v2 payment-required header", () => {
   assert.equal(paymentRequired.body.x402Version, 2);
   assert.equal(paymentRequired.body.resource.url, resource);
   assert.deepEqual(JSON.parse(Buffer.from(paymentRequired.header, "base64").toString("utf8")), paymentRequired.body);
+});
+
+test("paid agent preserves the x402 resource binding in its payment payload", () => {
+  const paymentPayload = buildPaymentPayload(
+    {
+      x402Version: 2,
+      resource: {
+        url: "https://uselute.xyz/v1/paid/audits",
+        description: "Lute audit",
+        mimeType: "application/json",
+      },
+    },
+    {
+      scheme: "exact",
+      network: "hedera:testnet",
+      amount: "50000000",
+      payTo: "0.0.123",
+      asset: "0.0.0",
+      extra: { feePayer: "0.0.456" },
+    },
+    { transaction: "signed-transaction-bytes" },
+  );
+
+  assert.equal(paymentPayload.x402Version, 2);
+  assert.deepEqual(paymentPayload.resource, {
+    url: "https://uselute.xyz/v1/paid/audits",
+    description: "Lute audit",
+    mimeType: "application/json",
+  });
+  assert.deepEqual(paymentPayload.accepted, {
+    scheme: "exact",
+    network: "hedera:testnet",
+    amount: "50000000",
+    payTo: "0.0.123",
+    asset: "0.0.0",
+    extra: { feePayer: "0.0.456" },
+  });
+  assert.deepEqual(paymentPayload.payload, { transaction: "signed-transaction-bytes" });
 });
