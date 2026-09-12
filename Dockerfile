@@ -16,7 +16,7 @@ COPY bazantic ./bazantic
 COPY integrity-packs ./integrity-packs
 COPY lute.targets.example.json ./
 
-EXPOSE 8788 8791
+EXPOSE 8788 8793
 
 # default: the dashboard. Override the command to run the watch runner or MCP server:
 #   docker compose run --rm lute node --import tsx src/cli.ts watch --config lute.targets.example.json

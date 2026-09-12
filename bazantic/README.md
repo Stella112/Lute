@@ -26,8 +26,8 @@ baz whoami
 
 # register Lute as a gateway from its OpenAPI spec
 baz gateway add \
-  --spec-url https://lute.example.com/openapi.json \
-  --endpoint https://lute.example.com \
+  --spec-url https://uselute.xyz/openapi.json \
+  --endpoint https://uselute.xyz \
   --name "Lute — Subgraph Reconciler" \
   --auth-type none \
   --status draft \
@@ -36,7 +36,7 @@ baz gateway add \
 baz gateway list --json   # note the endpointUrl
 ```
 
-Replace `https://lute.example.com` with your deployed URL. Values mirror
+The deployed Lute URL is `https://uselute.xyz`. Values mirror
 [`bazantic.yaml`](bazantic.yaml) (the manifest path is preview and not yet accepted by the
 released CLI, per Bazantic's docs — use `baz gateway add` for now).
 

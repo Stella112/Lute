@@ -5,13 +5,13 @@
 // actual verification verdict + evidence + the on-chain payment receipt.
 //
 // Env: HEDERA_OPERATOR_ID/HEDERA_OPERATOR_KEY (funds a one-time agent account if
-// HEDERA_AGENT_ID/HEDERA_AGENT_KEY are not set), PAID_URL (default http://localhost:8791).
+// HEDERA_AGENT_ID/HEDERA_AGENT_KEY are not set), PAID_URL (default http://localhost:8793).
 
 import { Client, PrivateKey, Hbar, AccountCreateTransaction, AccountBalanceQuery } from "@hiero-ledger/sdk";
 import { ExactHederaScheme, createClientHederaSigner, HEDERA_TESTNET_CAIP2 } from "@x402/hedera";
 import { wrapFetchWithPaymentFromConfig, decodePaymentResponseHeader } from "@x402/fetch";
 
-const PAID_URL = (process.env.PAID_URL ?? "http://localhost:8791").replace(/\/$/, "");
+const PAID_URL = (process.env.PAID_URL ?? "http://localhost:8793").replace(/\/$/, "");
 
 function operatorClient(): Client {
   const id = process.env.HEDERA_OPERATOR_ID;

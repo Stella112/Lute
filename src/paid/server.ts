@@ -9,7 +9,7 @@
 // returns the verdict/evidence. Fail-closed: if settlement fails, no result is returned.
 //
 // Env: HEDERA_OPERATOR_ID (payTo / Lute account), BLOCKY402_URL
-// (default https://api.testnet.blocky402.com), PAID_PORT (default 8791).
+// (default https://api.testnet.blocky402.com), PAID_PORT (default 8793).
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 
@@ -33,7 +33,7 @@ const NETWORK = "hedera:testnet";
 const ASSET_HBAR = "0.0.0";
 const FACILITATOR = (process.env.BLOCKY402_URL ?? "https://api.testnet.blocky402.com").replace(/\/$/, "");
 const PAY_TO = process.env.HEDERA_OPERATOR_ID ?? "";
-const PORT = Number(process.env.PAID_PORT ?? 8791);
+const PORT = Number(process.env.PAID_PORT ?? 8793);
 const PUBLIC_BASE_URL = (process.env.PAID_PUBLIC_URL ?? `http://localhost:${PORT}`).replace(/\/$/, "");
 const MAX_BLOCK_SPAN = parsePositiveBigInt(process.env.PAID_MAX_BLOCK_SPAN, DEFAULT_MAX_BLOCK_SPAN);
 const MAX_BODY_BYTES = parsePositiveNumber(process.env.PAID_MAX_BODY_BYTES, DEFAULT_MAX_BODY_BYTES);
