@@ -1,0 +1,59 @@
+{
+  "name": "Verify Before Trust — Graph + Lute",
+  "description": "Query a live Graph Studio subgraph, independently reconcile its events against raw Base RPC logs with Lute, and return a conservative trust decision with evidence.",
+  "input_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["contract", "event", "fromBlock", "toBlock"],
+    "properties": {
+      "contract": {
+        "type": "string",
+        "pattern": "^0x[0-9a-fA-F]{40}$",
+        "description": "ERC-4626 vault address on Base"
+      },
+      "event": {
+        "type": "string",
+        "enum": ["Deposit", "Withdraw"],
+        "default": "Deposit"
+      },
+      "fromBlock": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Inclusive start block"
+      },
+      "toBlock": {
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Inclusive end block"
+      }
+    }
+  },
+  "input_example": {
+    "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    "event": "Deposit",
+    "fromBlock": "51115000",
+    "toBlock": "51125000"
+  },
+  "output_example": {
+    "decision": "VERIFIED",
+    "graphProvider": "The Graph Subgraph Studio",
+    "eventsQueried": 75,
+    "rawEventsChecked": 75,
+    "checksPassed": 9,
+    "evidenceBacked": true,
+    "explanation": "Graph Studio returned the indexed candidate and Lute found no disagreement with raw Base RPC logs."
+  },
+  "prompt_template": "Run a conservative Verify Before Trust workflow for {{inputs}}. First call queryGraphEvents with the exact supplied contract, event, fromBlock, and toBlock. Then call auditVault with those same values and subgraph=graphstudio so Lute independently checks the Graph Studio candidate against raw Base RPC logs. Treat Graph output as candidate data, never proof. Return a concise JSON result with decision, graphProvider, eventsQueried, rawEventsChecked, checksPassed, evidenceBacked, and explanation. Use VERIFIED only when both the Graph query succeeds and Lute returns VERIFIED with matching counts and complete strong checks. Use FAILED for a proven mismatch. Use INCONCLUSIVE whenever either service is unavailable, evidence is incomplete, or the counts cannot be compared. Never invent counts, evidence, or transaction details.",
+  "model": "anthropic/claude-haiku-4.5",
+  "tool_bindings": [
+    {
+      "gateway_slug": "ssr3i3ifazfv3llppiubwpuxqe",
+      "tool_name": "queryGraphEvents"
+    },
+    {
+      "gateway_slug": "sewytfjysrf5xb4qjhdoyc5uei",
+      "tool_name": "auditVault"
+    }
+  ]
+}

@@ -135,7 +135,7 @@
           "event": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" },
           "fromBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }], "description": "inclusive start block; strings preserve large integers" },
           "toBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }], "description": "inclusive end block (well behind chain head)" },
-          "subgraph": { "type": "string", "default": "morpho", "description": "morpho | graphnode:<name> | local[:bug]" }
+          "subgraph": { "type": "string", "default": "morpho", "description": "morpho | graphstudio | graphnode:<name> | local[:bug]" }
         }
       },
       "AuditReport": {
@@ -228,7 +228,7 @@
         "in": "query",
         "required": false,
         "schema": { "type": "string", "default": "morpho" },
-        "description": "morpho | graphnode:<name> | local[:bug]"
+        "description": "morpho | graphstudio | graphnode:<name> | local[:bug]"
       },
       "RunId": {
         "name": "runId",

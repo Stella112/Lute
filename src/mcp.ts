@@ -39,7 +39,8 @@ server.registerTool(
       "transaction provenance, and duplicates. On disagreement it bisects the block range to " +
       "the first divergent (block, tx, logIndex). Returns a machine-readable verdict: VERIFIED, " +
       "FAILED, or INCONCLUSIVE (any infrastructure failure is INCONCLUSIVE, never VERIFIED). " +
-      "subgraph=morpho audits the real Morpho public index; subgraph=local:<bug> audits a local " +
+      "subgraph=morpho audits the real Morpho public index; subgraph=graphstudio audits the deployed " +
+      "Graph Studio subgraph; subgraph=local:<bug> audits a local " +
       "mapping (bugs: block-id, swap-fields, duplicate) for controlled demonstrations.",
     inputSchema: {
       network: z.enum(["base"]).default("base").describe("only Base is supported in phase 1/2"),
@@ -50,7 +51,7 @@ server.registerTool(
       subgraph: z
         .string()
         .default("morpho")
-        .describe("morpho | graphnode:<name> | substreams | local | local:block-id | local:swap-fields | local:duplicate"),
+        .describe("morpho | graphstudio | graphnode:<name> | substreams | local | local:block-id | local:swap-fields | local:duplicate"),
       minConfirmations: BlockInput.optional().describe(
         "reorg safety: require the range end to be at least this many blocks behind head, else INCONCLUSIVE",
       ),

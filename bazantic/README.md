@@ -57,7 +57,8 @@ baz curl 'https://<your-gateway>/api/audit?contract=0xbeeF010f9cb27031ad51e3333f
 `baz curl` returns `{ ok, status, paid, body }`, where `body` is the Lute `AuditReport`.
 The gateway-facing operation uses query parameters so the paid retry does not depend
 on a proxy preserving a JSON request body. Lute's direct REST endpoints still accept
-the JSON body shown in the judge quickstart.
+the JSON body shown in the judge quickstart. To audit the deployed Graph Studio
+candidate directly, pass `subgraph=graphstudio`.
 
 ## What I built vs. what needs you
 
