@@ -228,7 +228,14 @@ export class SubstreamsSource implements SubgraphSource {
       }
     } catch (error) {
       if (error instanceof SubgraphError) throw error;
-      throw new SubgraphError(`Substreams stream failed: ${(error as Error).message}`, "query_failed");
+      const message = (error as Error).message;
+      if (/invalid access token|unauthenticated/i.test(message)) {
+        throw new SubgraphError(
+          "Substreams access was rejected; set SUBSTREAMS_API_TOKEN to a valid Pinax JWT (not a Token API key)",
+          "query_failed",
+        );
+      }
+      throw new SubgraphError(`Substreams stream failed: ${message}`, "query_failed");
     }
 
     return {

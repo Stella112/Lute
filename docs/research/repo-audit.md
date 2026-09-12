@@ -35,7 +35,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
 | Lute MCP | ✅ (audit/explain/supported_events) — smaller tool set than §37 | `src/mcp.ts` |
 | OpenAPI spec | 🟡 `bazantic/openapi.json` exists; not the full `openapi/lute.yaml` (§39) | `bazantic/openapi.json` |
-| Reusable Substreams path (live) | ❌ not built | — |
+| Reusable Substreams path (live) | 🟡 adapter + offline schema tests done; live run awaits a valid Pinax JWT | `src/subgraph/substreams.ts`, `test/substreams.test.ts` |
 | Monitoring (runtime vs integrity) + incidents | 🟡 UI only (demo) | `web/` |
 | Hedera paid audit via **Blocky402** + real paid request | 🟡 v2 server/agent implemented and offline-tested; live paid request not recorded | `src/paid/`, `test/paid.test.ts` |
 | HCS attestation | ✅ live testnet (topic `0.0.10485368`) | `src/hedera.ts` |
@@ -46,8 +46,8 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | README reproducible / demo script / judge evidence | ✅ README, demo script, and honest evidence ledger | `README.md`, `docs/demo/`, `docs/judging/` |
 
 ## Biggest gaps to close for the contract (priority)
-1. **Live Hedera evidence** — run one approved funded testnet request through Blocky402 and record the settlement transaction.
-2. **Reusable ERC-4626 Substreams module + differential path** — §14/34/35 (the Graph composable $5k).
+1. **Live Substreams evidence** — replace the rejected VPS credential with a valid Pinax JWT and record a finite differential run.
+2. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
 3. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
 4. **Build + Repair workflow wired to Graph skills** — §10/11/27/29.
 5. **Studio deployment + smoke test** — §12/31/32.

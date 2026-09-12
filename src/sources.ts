@@ -46,6 +46,9 @@ export function makeSource(
   }
   if (subgraph === "substreams" || subgraph.startsWith("substreams:")) {
     const module = subgraph.slice("substreams".length + (subgraph.startsWith("substreams:") ? 1 : 0)) || undefined;
+    if (module !== undefined && !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(module)) {
+      throw new Error("substreams module must be a simple module name");
+    }
     return new SubstreamsSource(contract, eventName, { module });
   }
   if (subgraph.startsWith("local")) {
