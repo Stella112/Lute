@@ -39,7 +39,10 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 
 ## Bazantic
 
-- Gateway URL: `NOT RECORDED`
+- Active gateway URL: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com`
+- MCP endpoint: `https://374274w6xnchrppsi33r2y2xfy.bazgateway.com/mcp`
+- Gateway status: `active`; public MCP `tools/list` and read-only `info` call verified
+- Gateway operations: generated from `https://uselute.xyz/openapi.json`
 - Verify Before Trust Recipe: `NOT RECORDED`
 - Bazantic account username: `NOT RECORDED`
 - Other sponsor service used by the Recipe: `NOT RECORDED`

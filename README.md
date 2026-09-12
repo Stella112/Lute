@@ -19,6 +19,9 @@ BUGGED   RAW_RPC = 75   SUBGRAPH = 74   → FAILED
 
 Every number is discovered at runtime. None is hard-coded in the verifier.
 
+**Judge quickstart:** [`docs/judging/quickstart.md`](docs/judging/quickstart.md) contains
+the live UI, REST API, and Bazantic MCP entry points.
+
 ## How it works
 
 ```mermaid
