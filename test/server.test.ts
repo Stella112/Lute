@@ -25,6 +25,11 @@ test("Integrity Pack API is available without network access", async () => {
     assert.equal(typeof dashboardBody.stats.totalRuns, "number");
     assert.equal(dashboardBody.packs.length, 1);
     assert.ok("gate" in dashboardBody);
+    assert.ok("incidents" in dashboardBody);
+    assert.ok("monitoring" in dashboardBody);
+    const incidents = await fetch(`http://127.0.0.1:${address.port}/v1/incidents`);
+    assert.equal(incidents.status, 200);
+    assert.deepEqual((await incidents.json()) as { incidents: unknown[] }, { incidents: [] });
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }

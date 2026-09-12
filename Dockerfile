@@ -24,6 +24,7 @@ COPY bazantic ./bazantic
 COPY integrity-packs ./integrity-packs
 COPY subgraph ./subgraph
 COPY lute.targets.example.json ./
+COPY lute.monitor.example.json ./
 
 EXPOSE 8788 8793
 

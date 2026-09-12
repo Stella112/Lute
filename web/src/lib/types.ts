@@ -66,6 +66,40 @@ export type VerificationRunRow = { project: string; pack: string; verdict: Verdi
 export type Incident = { title: string; project: string; severity: "SEV-1" | "SEV-2" | "SEV-3"; age: string };
 export type MonitorRow = { label: string; state: "Healthy" | "Synced" | "Diverged" | "Degraded"; value: string };
 
+export type IncidentStatus = "OPEN" | "DIAGNOSED" | "REPAIR" | "REVERIFY" | "RESOLVED";
+export type IntegrityIncident = {
+  schemaVersion: 1;
+  incidentId: string;
+  status: IncidentStatus;
+  severity: "SEV-1" | "SEV-2" | "SEV-3";
+  title: string;
+  target: { name: string; network: string; contract: string; event: string; subgraph: string };
+  verdict: Extract<Verdict, "FAILED" | "INCONCLUSIVE">;
+  verificationRunId: string | null;
+  monitorRunId: string | null;
+  candidateHash: string | null;
+  integrityPack: { id: string; version: string };
+  firstDivergence: AuditReport["firstDivergence"];
+  violations: string[];
+  evidenceRoot: string | null;
+  repairContext: { failedChecks: string[]; relevantFiles: string[]; recommendedActions: string[] } | null;
+  error: string | null;
+  openedAt: string;
+  updatedAt: string;
+  resolution?: { reverificationRunId: string; resolvedAt: string };
+};
+
+export type MonitoringRun = {
+  schemaVersion: 1;
+  monitorRunId: string;
+  ranAt: string;
+  batch: { runId: string; ranAt: string; summary: { total: number; verified: number; failed: number; inconclusive: number }; verdict: Extract<Verdict, "VERIFIED" | "FAILED" | "INCONCLUSIVE">; results: { name: string; verdict: Extract<Verdict, "VERIFIED" | "FAILED" | "INCONCLUSIVE">; report: AuditReport | null; error?: string }[] };
+  verificationRunIds: string[];
+  incidentIds: string[];
+  resultIncidentIds: (string | null)[];
+  resolvedIncidentIds: string[];
+};
+
 export type DashboardSnapshot = {
   service: string;
   status: "ok";
@@ -89,6 +123,14 @@ export type DashboardSnapshot = {
     lastVerificationAt: string | null;
   };
   gate: DeploymentGateSnapshot | null;
+  incidents: IntegrityIncident[];
+  monitoring: {
+    configuredTargets: number;
+    lastRunId: string | null;
+    lastRunAt: string | null;
+    lastVerdict: Extract<Verdict, "VERIFIED" | "FAILED" | "INCONCLUSIVE"> | null;
+    lastSummary: { total: number; verified: number; failed: number; inconclusive: number } | null;
+  };
   latest: VerificationRun | null;
   runs: VerificationRun[];
 };

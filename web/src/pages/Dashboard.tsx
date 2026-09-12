@@ -13,6 +13,7 @@ import { EmptyState } from "./dashboard/EmptyState";
 import { Runs } from "./dashboard/Runs";
 import { Monitoring } from "./dashboard/Monitoring";
 import { Deployments } from "./dashboard/Deployments";
+import { Incidents } from "./dashboard/Incidents";
 
 type SectionKey =
   | "overview" | "projects" | "runs" | "packs" | "deployments"
@@ -87,7 +88,7 @@ export default function Dashboard() {
           {active === "projects" && <EmptyState icon={FolderGit2} title="Projects" body="Connect a Graph deployment to start tracking verification runs, deployments, and integrity over time." />}
           {active === "runs" && <Runs />}
           {active === "deployments" && <Deployments />}
-          {active === "incidents" && <EmptyState icon={AlertTriangle} title="Incidents" body="Integrity drift detected after deployment opens an incident with first-divergence evidence and a repair lifecycle." />}
+          {active === "incidents" && <Incidents />}
           {active === "monitoring" && <Monitoring />}
           {active === "settings" && <EmptyState icon={Settings} title="Settings" body="Workspace, RPC endpoints, integrity-pack policy, and deployment-gate rules will be configured here." />}
 

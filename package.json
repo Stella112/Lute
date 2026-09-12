@@ -12,7 +12,7 @@
     "lute": "node --import tsx src/cli.ts",
     "audit": "node --import tsx src/cli.ts audit",
     "mcp": "node --import tsx src/mcp.ts",
-    "test": "node --import tsx --test test/unit.test.ts test/negative.test.ts test/runner.test.ts test/explain.test.ts test/graphNode.test.ts test/substreams.test.ts test/x402.test.ts test/hedera.test.ts test/candidate.test.ts test/gate.test.ts test/paid.test.ts test/run-store.test.ts test/server.test.ts test/build-repair.test.ts",
+    "test": "node --import tsx --test test/unit.test.ts test/negative.test.ts test/runner.test.ts test/explain.test.ts test/graphNode.test.ts test/substreams.test.ts test/x402.test.ts test/hedera.test.ts test/candidate.test.ts test/gate.test.ts test/paid.test.ts test/run-store.test.ts test/server.test.ts test/build-repair.test.ts test/incidents.test.ts test/monitoring.test.ts",
     "watch": "node --import tsx src/cli.ts watch",
     "dashboard": "node --import tsx src/server.ts",
     "x402": "node --import tsx src/x402-server.ts",

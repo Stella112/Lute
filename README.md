@@ -128,6 +128,13 @@ is set the batch **posts a summary to Slack/Discord/any webhook** (Slack/generic
 Schedule it with OS cron or the Claude Code `/schedule` routine — the runner is the unit
 of work; scheduling just invokes it.
 
+The dashboard uses the separate `lute.monitor.example.json` watchlist. `POST
+/v1/monitoring/run` runs it with the unchanged verifier, persists each
+`VerificationRun`, and opens an evidence-backed incident for every failed or
+inconclusive target. `GET /v1/incidents` exposes those records; a later verified
+recheck resolves a matching incident. Broader candidate repair remains explicit via
+the existing `lute repair` workflow.
+
 Live proof over the example watchlist (real Base data):
 
 ```
@@ -380,11 +387,11 @@ unchanged verifier.
 ## Scope
 
 The verifier, MCP, watch runner, dashboard, HCS attestation, candidate hashing/gate,
-real Graph Node path, generic x402 path, and the Blocky402/Hedera paid-service code are
+real Graph Node path, monitoring incidents, generic x402 path, and the Blocky402/Hedera paid-service code are
 implemented. The honest Lute subgraph is deployed to Graph Studio on Base and has been
 smoke-queried successfully. The first deterministic Base ERC-4626 Build workflow now
-scaffolds and compiles candidates; broader AI build/repair orchestration, continuous
-incident persistence, and a recorded real paid Hedera request remain separate
+scaffolds and compiles candidates; broader AI build/repair orchestration, automated
+scheduling, and a recorded real paid Hedera request remain separate
 demo/production work and must not be presented as complete until their evidence is
 collected.
 

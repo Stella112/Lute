@@ -1,13 +1,12 @@
 // API adapter. The ONLY place that talks to the backend or provides demo data, so the
-// rest of the UI never hardcodes values and the real endpoints are trivial to wire.
+// rest of the UI never hardcodes values and the real endpoints are easy to audit.
 //
 // REAL: runAudit() → POST /api/audit (Lute's actual reconciler backend).
-// DEMO: everything under `demo` is product-vision data for capabilities the backend
-//       does not implement yet (build/repair/deploy gate/monitoring/incidents). It is
-//       clearly namespaced and must never be presented to users as live production data.
+// REAL: dashboard, deployment gate, monitoring, incidents, and verification history.
+// DEMO: everything under `demo` remains product-vision data for other capabilities.
 
 import type {
-  AuditReport, DashboardSnapshot, DeploymentGate, Incident, IntegrityPack, MonitorRow, VerificationRunRow, VerificationStage,
+  AuditReport, DashboardSnapshot, DeploymentGate, Incident, IntegrityIncident, IntegrityPack, MonitorRow, MonitoringRun, VerificationRunRow, VerificationStage,
 } from "./types";
 
 export type RunAuditParams = {
@@ -39,6 +38,18 @@ async function getJSON<T>(path: string): Promise<T> {
 
 export function getDashboard(): Promise<DashboardSnapshot> {
   return getJSON<DashboardSnapshot>("/v1/dashboard");
+}
+
+export async function getIncidents(): Promise<IntegrityIncident[]> {
+  const body = await getJSON<{ incidents: IntegrityIncident[] }>("/v1/incidents");
+  return body.incidents;
+}
+
+export async function runMonitoring(): Promise<MonitoringRun> {
+  const res = await fetch("/v1/monitoring/run", { method: "POST", headers: { "content-type": "application/json" } });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error ?? `monitoring failed (${res.status})`);
+  return body as MonitoringRun;
 }
 
 export async function getIntegrityPacks(): Promise<IntegrityPack[]> {

@@ -18,6 +18,8 @@ import { resolveVerifierRpc } from "./rpc.js";
 import { makeSource } from "./sources.js";
 import { decideGate } from "./gate.js";
 import { createVerificationRun, freshnessFor, listVerificationRuns, loadVerificationRun, requiredStrongChecksPassed, saveVerificationRun } from "./run-store.js";
+import { listIncidents, loadIncident } from "./incidents.js";
+import { listMonitoringRuns, loadMonitoringTargets, runMonitoring, type MonitoringRun } from "./monitoring.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -167,6 +169,14 @@ function deploymentGateFor(latest: ReturnType<typeof listVerificationRuns>[numbe
 function dashboardSnapshot() {
   const runs = listVerificationRuns();
   const latest = runs[0] ?? null;
+  const incidents = listIncidents();
+  const latestMonitoring = listMonitoringRuns(1)[0] ?? null;
+  let configuredTargets = 0;
+  try {
+    configuredTargets = loadMonitoringTargets().length;
+  } catch {
+    configuredTargets = 0;
+  }
   return {
     service: "lute",
     status: "ok",
@@ -180,6 +190,14 @@ function dashboardSnapshot() {
       lastVerificationAt: latest?.createdAt ?? null,
     },
     gate: deploymentGateFor(latest),
+    incidents,
+    monitoring: {
+      configuredTargets,
+      lastRunId: latestMonitoring?.monitorRunId ?? null,
+      lastRunAt: latestMonitoring?.ranAt ?? null,
+      lastVerdict: latestMonitoring?.batch.verdict ?? null,
+      lastSummary: latestMonitoring?.batch.summary ?? null,
+    },
     latest,
     runs,
   };
@@ -187,6 +205,25 @@ function dashboardSnapshot() {
 
 function isSafeRunId(value: string): boolean {
   return /^[A-Za-z0-9_-]+$/.test(value);
+}
+
+function isSafeIncidentId(value: string): boolean {
+  return /^[A-Za-z0-9_-]+$/.test(value);
+}
+
+let monitoringInFlight: Promise<MonitoringRun> | null = null;
+
+function executeMonitoring(): Promise<MonitoringRun> {
+  if (monitoringInFlight) return monitoringInFlight;
+  monitoringInFlight = (async () => {
+    const targets = loadMonitoringTargets();
+    const candidate = buildCandidateManifest(CANDIDATE_DIR);
+    const logger = new Logger(newRunId());
+    return runMonitoring(targets, { candidate, logger });
+  })().finally(() => {
+    monitoringInFlight = null;
+  });
+  return monitoringInFlight;
 }
 
 const FRONTEND_TYPES: Record<string, string> = {
@@ -242,6 +279,19 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs/erc4626@1") return send(res, 200, packManifest());
     if (req.method === "GET" && url.pathname === "/v1/dashboard") return send(res, 200, dashboardSnapshot());
     if (req.method === "GET" && url.pathname === "/v1/deployment-gate") return send(res, 200, { gate: deploymentGateFor(listVerificationRuns()[0] ?? null) });
+    if (req.method === "GET" && url.pathname === "/v1/incidents") return send(res, 200, { incidents: listIncidents() });
+
+    const incidentMatch = url.pathname.match(/^\/v1\/incidents\/([^/]+)$/);
+    if (req.method === "GET" && incidentMatch) {
+      const id = incidentMatch[1]!;
+      if (!isSafeIncidentId(id)) return send(res, 400, { error: "invalid incident id" });
+      return send(res, 200, loadIncident(id));
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/monitoring/run") {
+      const result = await executeMonitoring();
+      return send(res, 200, result);
+    }
 
     const verificationMatch = url.pathname.match(/^\/v1\/verifications\/([^/]+)(?:\/(evidence|manifest))?$/);
     if (req.method === "GET" && verificationMatch) {

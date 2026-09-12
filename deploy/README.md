@@ -109,6 +109,14 @@ the missing event and bisects to it. Nothing about the bug is known to the verif
   ```
   (Point a target's `subgraph` at `graphnode:lute/steak-honest` to watch the real subgraph.)
 
+- The production dashboard has a safe one-target watchlist in
+  `lute.monitor.example.json`. Its **Monitoring → Run monitoring** action calls
+  `POST /v1/monitoring/run`, persists the raw-vs-index verification result, and
+  records an incident with first-divergence evidence when the target is not verified.
+  A later verified recheck resolves the matching incident. Keep the existing
+  `lute.targets.example.json` for the three-target CLI demo, including its intentional
+  bugged mapping.
+
 ## Teardown
 
 ```bash

@@ -1,0 +1,14 @@
+{
+  "_comment": "Dashboard-safe watchlist for the honest Graph Node deployment. The CLI demo watchlist remains lute.targets.example.json.",
+  "targets": [
+    {
+      "name": "lute-graph-deployment",
+      "network": "base",
+      "contract": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+      "event": "Deposit",
+      "fromBlock": 51115000,
+      "toBlock": 51125000,
+      "subgraph": "graphnode:lute/steak-honest"
+    }
+  ]
+}
