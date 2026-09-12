@@ -10,3 +10,10 @@ coverage/
 subgraph/generated/
 subgraph/build/
 attest.err
+
+# design reference uploads (copied cleanly into docs/ui/)
+ChatGPT Image*.png
+
+# frontend build output
+web/dist/
+dist/
