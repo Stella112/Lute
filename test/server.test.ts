@@ -1,11 +1,25 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { server, validateBody } from "../src/server.js";
+import { parseAuditRequest, server, validateBody } from "../src/server.js";
 
 test("HTTP validation rejects unsafe and malformed audit requests", () => {
   assert.throws(() => validateBody({ contract: "bad", fromBlock: "1", toBlock: "2" }), /valid EVM address/);
   assert.throws(() => validateBody({ contract: "0x" + "1".repeat(40), fromBlock: "3", toBlock: "2" }), /greater than/);
+});
+
+test("audit requests accept query parameters for gateway body compatibility", () => {
+  const url = new URL("http://127.0.0.1/api/audit?contract=0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183&event=Deposit&fromBlock=51115000&toBlock=51125000&subgraph=morpho");
+  const expected = {
+    contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    event: "Deposit",
+    fromBlock: "51115000",
+    toBlock: "51125000",
+    subgraph: "morpho",
+  };
+  assert.deepEqual(parseAuditRequest("", url), expected);
+  assert.deepEqual(parseAuditRequest("not-json", url), expected);
+  assert.throws(() => parseAuditRequest("not-json", new URL("http://127.0.0.1/api/audit")), /valid JSON/);
 });
 
 test("Integrity Pack API is available without network access", async () => {

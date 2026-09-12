@@ -14,7 +14,13 @@
         "operationId": "auditVaultV1",
         "summary": "Run an independent ERC-4626 audit",
         "description": "Runs the Lute verifier against raw Base RPC logs and an indexed candidate.",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditRequest" } } } },
+        "parameters": [
+          { "$ref": "#/components/parameters/ContractQuery" },
+          { "$ref": "#/components/parameters/EventQuery" },
+          { "$ref": "#/components/parameters/FromBlockQuery" },
+          { "$ref": "#/components/parameters/ToBlockQuery" },
+          { "$ref": "#/components/parameters/SubgraphQuery" }
+        ],
         "responses": {
           "200": { "description": "Audit report", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditReport" } } } },
           "400": { "description": "Invalid request" },
@@ -27,7 +33,13 @@
         "operationId": "verifyCurrentCandidate",
         "summary": "Verify and persist the configured candidate",
         "description": "Runs the audit, hashes the server-configured candidate, and persists an immutable-ish VerificationRun used by the deployment gate.",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuditRequest" } } } },
+        "parameters": [
+          { "$ref": "#/components/parameters/ContractQuery" },
+          { "$ref": "#/components/parameters/EventQuery" },
+          { "$ref": "#/components/parameters/FromBlockQuery" },
+          { "$ref": "#/components/parameters/ToBlockQuery" },
+          { "$ref": "#/components/parameters/SubgraphQuery" }
+        ],
         "responses": {
           "201": { "description": "Verified run persisted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerificationRun" } } } },
           "200": { "description": "Run persisted with FAILED or INCONCLUSIVE verdict" }
@@ -69,14 +81,13 @@
         "operationId": "auditVault",
         "summary": "Reconcile a Subgraph index against raw chain data",
         "description": "Reconstructs the event set directly from Base RPC logs and compares it to the same events as reported by an index. Returns the verdict and, on disagreement, the first divergent (block, tx, logIndex).",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/AuditRequest" }
-            }
-          }
-        },
+        "parameters": [
+          { "$ref": "#/components/parameters/ContractQuery" },
+          { "$ref": "#/components/parameters/EventQuery" },
+          { "$ref": "#/components/parameters/FromBlockQuery" },
+          { "$ref": "#/components/parameters/ToBlockQuery" },
+          { "$ref": "#/components/parameters/SubgraphQuery" }
+        ],
         "responses": {
           "200": {
             "description": "Audit report",
@@ -185,6 +196,40 @@
       }
     },
     "parameters": {
+      "ContractQuery": {
+        "name": "contract",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+        "description": "ERC-4626 vault address on Base"
+      },
+      "EventQuery": {
+        "name": "event",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" }
+      },
+      "FromBlockQuery": {
+        "name": "fromBlock",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9]+$" },
+        "description": "inclusive start block; decimal string"
+      },
+      "ToBlockQuery": {
+        "name": "toBlock",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9]+$" },
+        "description": "inclusive end block; decimal string"
+      },
+      "SubgraphQuery": {
+        "name": "subgraph",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "default": "morpho" },
+        "description": "morpho | graphnode:<name> | local[:bug]"
+      },
       "RunId": {
         "name": "runId",
         "in": "path",

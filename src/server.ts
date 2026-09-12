@@ -84,6 +84,34 @@ function parseBody(raw: string): AuditBody {
   return parsed as AuditBody;
 }
 
+function queryBody(url: URL): AuditBody | null {
+  const names = ["contract", "event", "fromBlock", "toBlock", "subgraph"] as const;
+  const entries = names.flatMap((name) => {
+    const value = url.searchParams.get(name);
+    return value === null ? [] : [[name, value] as const];
+  });
+  return entries.length === 0 ? null : Object.fromEntries(entries);
+}
+
+function parseAuditRequest(raw: string, url: URL): AuditBody {
+  const fromQuery = queryBody(url);
+  if (!raw.trim()) {
+    if (fromQuery) return fromQuery;
+    return parseBody(raw);
+  }
+  try {
+    return parseBody(raw);
+  } catch (error) {
+    // Some OpenAPI gateways currently lose or stringify a JSON request body on
+    // the post-payment retry. The published Bazantic contract uses query
+    // parameters for audit inputs, but accepting the query form here keeps the
+    // direct JSON REST API backward-compatible and makes the proxy fallback
+    // deterministic when a malformed body accompanies a complete query.
+    if (fromQuery) return fromQuery;
+    throw error;
+  }
+}
+
 function parseBlock(value: unknown, name: string): bigint {
   if (typeof value === "number") {
     if (!Number.isSafeInteger(value) || value < 0) throw new RequestError(400, `${name} must be a non-negative integer`);
@@ -304,12 +332,12 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === "POST" && (url.pathname === "/api/audit" || url.pathname === "/v1/audits")) {
-      const report = await executeAudit(parseBody(await readBody(req)), newRunId());
+      const report = await executeAudit(parseAuditRequest(await readBody(req), url), newRunId());
       return send(res, 200, report);
     }
 
     if (req.method === "POST" && url.pathname === "/v1/verifications") {
-      const report = await executeAudit(parseBody(await readBody(req)), newRunId());
+      const report = await executeAudit(parseAuditRequest(await readBody(req), url), newRunId());
       const candidate = buildCandidateManifest(CANDIDATE_DIR);
       const run = createVerificationRun({ report, candidate, evidenceRoot: report.evidenceRoot ?? evidenceRoot(report) });
       const file = saveVerificationRun(run);
@@ -342,4 +370,4 @@ if (process.argv[1] && process.argv[1].endsWith("server.ts")) {
   server.listen(PORT, () => process.stderr.write(`lute-dashboard: http://localhost:${PORT}\n`));
 }
 
-export { server, executeAudit, validateBody };
+export { server, executeAudit, validateBody, parseAuditRequest };
