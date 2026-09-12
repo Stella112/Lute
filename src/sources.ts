@@ -8,6 +8,7 @@ import { MorphoApiSource } from "./subgraph/morpho.js";
 import { GraphNodeSource } from "./subgraph/graphNode.js";
 import { LocalMappingSource, type MappingBug } from "./subgraph/localMapping.js";
 import type { SubgraphSource } from "./subgraph/source.js";
+import { SubstreamsSource } from "./subgraph/substreams.js";
 
 // Resolve a `graphnode:` argument to a full GraphQL endpoint.
 //
@@ -43,11 +44,15 @@ export function makeSource(
       eventName,
     );
   }
+  if (subgraph === "substreams" || subgraph.startsWith("substreams:")) {
+    const module = subgraph.slice("substreams".length + (subgraph.startsWith("substreams:") ? 1 : 0)) || undefined;
+    return new SubstreamsSource(contract, eventName, { module });
+  }
   if (subgraph.startsWith("local")) {
     const bug = (subgraph.split(":")[1] ?? "none") as MappingBug;
     return new LocalMappingSource(contract, eventName, rpc, bug);
   }
   throw new Error(
-    `unknown subgraph "${subgraph}" (use morpho | graphnode:<name|url> | local[:block-id|swap-fields|duplicate])`,
+    `unknown subgraph "${subgraph}" (use morpho | graphnode:<name|url> | substreams[:module] | local[:block-id|swap-fields|duplicate])`,
   );
 }

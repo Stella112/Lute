@@ -93,6 +93,7 @@ export function parsePaidAuditBody(
   }
   if (
     subgraph !== "morpho" &&
+    subgraph !== "substreams" &&
     !subgraph.startsWith("graphnode:") &&
     !["local", "local:block-id", "local:swap-fields", "local:duplicate"].includes(subgraph)
   ) {

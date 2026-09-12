@@ -46,7 +46,7 @@ runner**, a **dashboard**, and a deterministic **plain-English** explainer.
 
 | | RAW_RPC (verifier / ground truth) | SUBGRAPH (candidate under audit) |
 |---|---|---|
-| code | `src/rpc.ts`, `src/abi.ts`, `src/canonical.ts` | `morpho.ts` (public index) · `graphNode.ts` (real Graph Node) · `localMapping.ts` (controlled) |
+| code | `src/rpc.ts`, `src/abi.ts`, `src/canonical.ts` | `morpho.ts` (public index) · `graphNode.ts` (real Graph Node) · `substreams.ts` (Pinax stream) · `localMapping.ts` (controlled) |
 | how facts are derived | `eth_getLogs` → ABI-decode the raw log | queried from an index built by someone else's mapping |
 | topic0 | `keccak256("Deposit(address,address,uint256,uint256)")`, asserted to equal the emitted topic | n/a |
 
@@ -149,12 +149,19 @@ talks to this local server (same-origin, no CORS); all RPC/Subgraph traffic is s
 npm run dashboard   # http://localhost:8788  (PORT env to override)
 ```
 
-Pick a vault, event, block range and index (`morpho`, or a `local:<bug>` mapping), hit
+Pick a vault, event, block range and index (`morpho`, `substreams`, or a `local:<bug>` mapping), hit
 **Run audit**, and see the verdict badge, RAW vs SUBGRAPH counts, the checks table, the
 first-divergence panel, and full provenance. Endpoints: `POST /api/audit` (returns the
 `AuditReport` JSON) and `GET /api/events`. No reimplementation — the UI is a thin view
 over the same engine the CLI and MCP server use. Verified live in-browser: `morpho` →
 VERIFIED (75/75), `local:block-id` → FAILED (75/74, first divergence block 51120808).
+
+For an independent streaming candidate, set `SUBSTREAMS_API_TOKEN` in the ignored
+`.env` and use `--subgraph substreams`. Lute consumes Pinax's pinned public
+ERC-4626 `map_events` package, filters it to the requested vault, and still
+reconstructs the expected result independently from raw Base RPC logs. Override
+the endpoint, package, or module with `SUBSTREAMS_ENDPOINT`, `SUBSTREAMS_PACKAGE`,
+or `SUBSTREAMS_MODULE`.
 
 ---
 

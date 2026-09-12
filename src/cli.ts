@@ -220,7 +220,7 @@ async function main(): Promise<number> {
   if (cmd === "gate") return runGate(rest);
   if (cmd !== "audit") {
     process.stderr.write(
-      "usage:\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
+      "usage:\n  lute audit  --network base --contract 0x.. --subgraph <morpho|graphnode:<name>|substreams|local[:bug]> --event Deposit|Withdraw --from-block N --to-block N [--json] [--explain] [--attest]\n  lute verify --candidate <dir> --contract 0x.. --subgraph <src> --event .. --from-block N --to-block N [--output <run.json>] [--json]\n  lute gate   --candidate <dir> --run <VerificationRun.json> [--json]\n  lute watch  --config <targets.json> [--json]\n  lute explain --file <report.json>\n  lute attest  --file <report.json>   (publishes the verdict to Hedera HCS)\n",
     );
     return 1;
   }

@@ -50,7 +50,7 @@ server.registerTool(
       subgraph: z
         .string()
         .default("morpho")
-        .describe("morpho | local | local:block-id | local:swap-fields | local:duplicate"),
+        .describe("morpho | graphnode:<name> | substreams | local | local:block-id | local:swap-fields | local:duplicate"),
       minConfirmations: BlockInput.optional().describe(
         "reorg safety: require the range end to be at least this many blocks behind head, else INCONCLUSIVE",
       ),

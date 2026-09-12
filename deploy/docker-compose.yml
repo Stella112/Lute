@@ -63,6 +63,10 @@ services:
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000
+      SUBSTREAMS_API_TOKEN: ${SUBSTREAMS_API_TOKEN:-}
+      SUBSTREAMS_ENDPOINT: ${SUBSTREAMS_ENDPOINT:-https://base.substreams.pinax.network:443}
+      SUBSTREAMS_PACKAGE: ${SUBSTREAMS_PACKAGE:-https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg}
+      SUBSTREAMS_MODULE: ${SUBSTREAMS_MODULE:-map_events}
       PORT: "8788"
 
   lute-paid:
@@ -83,6 +87,10 @@ services:
     environment:
       BASE_RPC_VERIFIER: ${BASE_RPC_VERIFIER:-https://mainnet.base.org}
       GRAPH_NODE_URL: http://graph-node:8000
+      SUBSTREAMS_API_TOKEN: ${SUBSTREAMS_API_TOKEN:-}
+      SUBSTREAMS_ENDPOINT: ${SUBSTREAMS_ENDPOINT:-https://base.substreams.pinax.network:443}
+      SUBSTREAMS_PACKAGE: ${SUBSTREAMS_PACKAGE:-https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg}
+      SUBSTREAMS_MODULE: ${SUBSTREAMS_MODULE:-map_events}
       PAID_PORT: "8793"
       PAID_PUBLIC_URL: ${PAID_PUBLIC_URL:-https://uselute.xyz}
 
