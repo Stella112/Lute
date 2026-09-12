@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import { parseAuditRequest, server, validateBody } from "../src/server.js";
+import { buildGraphProviderRequest } from "../src/graph-provider.js";
 
 test("HTTP validation rejects unsafe and malformed audit requests", () => {
   assert.throws(() => validateBody({ contract: "bad", fromBlock: "1", toBlock: "2" }), /valid EVM address/);
@@ -20,6 +21,19 @@ test("audit requests accept query parameters for gateway body compatibility", ()
   assert.deepEqual(parseAuditRequest("", url), expected);
   assert.deepEqual(parseAuditRequest("not-json", url), expected);
   assert.throws(() => parseAuditRequest("not-json", new URL("http://127.0.0.1/api/audit")), /valid JSON/);
+});
+
+test("Graph provider adapter builds a bounded provider query", () => {
+  const request = buildGraphProviderRequest({
+    contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+    eventName: "Deposit",
+    fromBlock: 51115000n,
+    toBlock: 51125000n,
+  });
+  assert.match(request.endpoint, /^https:\/\/api\.studio\.thegraph\.com\//);
+  assert.match(request.query, /depositEvents/);
+  assert.match(request.query, /blockNumber_gte/);
+  assert.deepEqual(request.variables, { lo: "51115000", hi: "51125000" });
 });
 
 test("Integrity Pack API is available without network access", async () => {

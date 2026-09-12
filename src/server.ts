@@ -20,6 +20,7 @@ import { decideGate } from "./gate.js";
 import { createVerificationRun, freshnessFor, listVerificationRuns, loadVerificationRun, requiredStrongChecksPassed, saveVerificationRun } from "./run-store.js";
 import { listIncidents, loadIncident } from "./incidents.js";
 import { listMonitoringRuns, loadMonitoringTargets, runMonitoring, type MonitoringRun } from "./monitoring.js";
+import { GraphProviderError, queryGraphStudio } from "./graph-provider.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -30,6 +31,12 @@ try {
   OPENAPI = readFileSync(join(__dirname, "..", "bazantic", "openapi.json"), "utf8");
 } catch {
   OPENAPI = null;
+}
+let GRAPH_OPENAPI: string | null = null;
+try {
+  GRAPH_OPENAPI = readFileSync(join(__dirname, "..", "bazantic", "graph-openapi.json"), "utf8");
+} catch {
+  GRAPH_OPENAPI = null;
 }
 
 const PORT = Number(process.env.PORT ?? 8788);
@@ -301,7 +308,12 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     if (req.method === "GET" && url.pathname === "/openapi.json") return OPENAPI ? send(res, 200, OPENAPI) : send(res, 404, { error: "openapi spec not bundled" });
+    if (req.method === "GET" && url.pathname === "/graph-openapi.json") return GRAPH_OPENAPI ? send(res, 200, GRAPH_OPENAPI) : send(res, 404, { error: "graph adapter spec not bundled" });
     if (req.method === "GET" && url.pathname === "/api/events") return send(res, 200, Object.values(ERC4626_EVENTS).map((e) => ({ name: e.name, signature: e.signature, topic0: e.topic0 })));
+    if (req.method === "GET" && url.pathname === "/api/graph/events") {
+      const target = validateBody(queryBody(url) ?? {});
+      return send(res, 200, await queryGraphStudio({ contract: target.contract, eventName: target.eventName, fromBlock: target.fromBlock, toBlock: target.toBlock }));
+    }
     if (req.method === "GET" && url.pathname === "/v1/health") return send(res, 200, { service: "lute", status: "ok", verifierCommit: process.env.LUTE_VERIFIER_COMMIT ?? "unknown" });
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs") return send(res, 200, { packs: [packManifest()] });
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs/erc4626@1") return send(res, 200, packManifest());
@@ -352,6 +364,7 @@ const server = createServer(async (req, res) => {
     return send(res, 404, { error: "not found" });
   } catch (error) {
     if (error instanceof RequestError) return send(res, error.status, { error: error.message });
+    if (error instanceof GraphProviderError) return send(res, error.status, { error: error.message });
     if (error instanceof Error && /verification run not found|invalid VerificationRun file/.test(error.message)) return send(res, 404, { error: error.message });
     return send(res, 500, { error: error instanceof Error ? error.message : String(error) });
   }

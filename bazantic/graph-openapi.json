@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Lute Graph Provider Adapter",
+    "version": "0.1.0",
+    "description": "Read-only query of the deployed Graph Studio ERC-4626 subgraph. Lute uses the returned indexed events as the candidate that its independent verifier checks against raw Base RPC logs."
+  },
+  "servers": [
+    { "url": "https://uselute.xyz", "description": "Public Lute Graph provider adapter" }
+  ],
+  "paths": {
+    "/api/graph/events": {
+      "get": {
+        "operationId": "queryGraphEvents",
+        "summary": "Query indexed ERC-4626 events from Graph Studio",
+        "description": "Fetches the selected event type and block range from Lute's deployed Graph Studio subgraph. The adapter performs the provider GraphQL request server-side.",
+        "parameters": [
+          { "$ref": "#/components/parameters/ContractQuery" },
+          { "$ref": "#/components/parameters/EventQuery" },
+          { "$ref": "#/components/parameters/FromBlockQuery" },
+          { "$ref": "#/components/parameters/ToBlockQuery" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indexed Graph provider events",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GraphEventsResponse" } } }
+          },
+          "400": { "description": "Invalid request" },
+          "502": { "description": "Graph provider unavailable or malformed" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ContractQuery": {
+        "name": "contract",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+        "description": "Lute demo ERC-4626 vault address on Base"
+      },
+      "EventQuery": {
+        "name": "event",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" }
+      },
+      "FromBlockQuery": {
+        "name": "fromBlock",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9]+$" },
+        "description": "Inclusive start block"
+      },
+      "ToBlockQuery": {
+        "name": "toBlock",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9]+$" },
+        "description": "Inclusive end block"
+      }
+    },
+    "schemas": {
+      "GraphEventsResponse": {
+        "type": "object",
+        "required": ["provider", "network", "endpoint", "contract", "event", "range", "events", "eventCount"],
+        "properties": {
+          "provider": { "type": "string" },
+          "network": { "const": "base" },
+          "endpoint": { "type": "string", "format": "uri" },
+          "contract": { "type": "string" },
+          "event": { "type": "string", "enum": ["Deposit", "Withdraw"] },
+          "range": { "type": "object", "properties": { "fromBlock": { "type": "string" }, "toBlock": { "type": "string" } } },
+          "events": { "type": "array", "items": { "type": "object" } },
+          "eventCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}
