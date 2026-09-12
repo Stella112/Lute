@@ -7,7 +7,7 @@
 //       clearly namespaced and must never be presented to users as live production data.
 
 import type {
-  AuditReport, DeploymentGate, Incident, IntegrityPack, MonitorRow, VerificationRunRow, VerificationStage,
+  AuditReport, DashboardSnapshot, DeploymentGate, Incident, IntegrityPack, MonitorRow, VerificationRunRow, VerificationStage,
 } from "./types";
 
 export type RunAuditParams = {
@@ -28,6 +28,32 @@ export async function runAudit(params: RunAuditParams): Promise<AuditReport> {
   const body = await res.json();
   if (!res.ok) throw new Error(body?.error ?? `audit failed (${res.status})`);
   return body as AuditReport;
+}
+
+async function getJSON<T>(path: string): Promise<T> {
+  const res = await fetch(path);
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
+  return body as T;
+}
+
+export function getDashboard(): Promise<DashboardSnapshot> {
+  return getJSON<DashboardSnapshot>("/v1/dashboard");
+}
+
+export async function getIntegrityPacks(): Promise<IntegrityPack[]> {
+  const body = await getJSON<{ packs: DashboardSnapshot["packs"] }>("/v1/integrity-packs");
+  return body.packs.map((pack) => ({
+    id: pack.id,
+    name: pack.standard,
+    version: `${pack.id}@${pack.version}`,
+    standard: pack.standard,
+    events: pack.events,
+    strongChecks: pack.strongChecks,
+    conditionalChecks: pack.conditionalChecks,
+    unsupportedClaims: pack.unsupportedClaims,
+    status: "STABLE",
+  }));
 }
 
 export const IS_DEMO = true;
@@ -56,12 +82,12 @@ export const demo = {
   packs(): IntegrityPack[] {
     return [
       { id: "erc4626", name: "ERC-4626", version: "erc4626@1", standard: "Tokenized Vault", status: "STABLE",
-        strongChecks: ["event_count", "event_presence", "field_accuracy", "duplicate_detection"],
+        events: ["Deposit", "Withdraw"], strongChecks: ["event_count", "event_presence", "field_accuracy", "duplicate_detection"],
         conditionalChecks: ["block_provenance", "transaction_provenance"],
-        fields: ["Deposit", "Withdraw", "assets", "shares", "owner", "receiver"] },
+        unsupportedClaims: ["APY", "arbitrary vault strategy accounting"] },
       { id: "amm", name: "AMM / LP", version: "amm@1", standard: "Automated Market Maker", status: "COMING_SOON",
-        strongChecks: ["swap_reconciliation", "reserve_provenance"], conditionalChecks: ["lp_supply"],
-        fields: ["Swap", "Mint", "Burn", "amount0", "amount1"] },
+        events: ["Swap", "Mint", "Burn"], strongChecks: ["swap_reconciliation", "reserve_provenance"], conditionalChecks: ["lp_supply"],
+        unsupportedClaims: [] },
     ];
   },
   recentRuns(): VerificationRunRow[] {

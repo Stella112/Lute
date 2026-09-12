@@ -16,7 +16,7 @@ import { toJSON } from "./bigint.js";
 import { newRunId, Logger } from "./logger.js";
 import { resolveVerifierRpc } from "./rpc.js";
 import { makeSource } from "./sources.js";
-import { createVerificationRun, loadVerificationRun, saveVerificationRun } from "./run-store.js";
+import { createVerificationRun, listVerificationRuns, loadVerificationRun, saveVerificationRun } from "./run-store.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -119,8 +119,30 @@ function packManifest(): Record<string, unknown> {
     standard: "ERC-4626",
     supportedChains: ["base"],
     requiredSources: ["RAW_RPC", "SUBGRAPH"],
+    events: ["Deposit", "Withdraw"],
     strongChecks: ["event_count", "duplicate_detection", "event_presence", "transaction_provenance", "block_provenance", "field_accuracy"],
+    conditionalChecks: [],
     unsupportedClaims: ["APY", "arbitrary vault strategy accounting"],
+  };
+}
+
+function dashboardSnapshot() {
+  const runs = listVerificationRuns();
+  const latest = runs[0] ?? null;
+  return {
+    service: "lute",
+    status: "ok",
+    verifierCommit: process.env.LUTE_VERIFIER_COMMIT ?? "unknown",
+    packs: [packManifest()],
+    stats: {
+      totalRuns: runs.length,
+      verifiedRuns: runs.filter((run) => run.verdict === "VERIFIED").length,
+      failedRuns: runs.filter((run) => run.verdict === "FAILED").length,
+      inconclusiveRuns: runs.filter((run) => run.verdict === "INCONCLUSIVE").length,
+      lastVerificationAt: latest?.createdAt ?? null,
+    },
+    latest,
+    runs,
   };
 }
 
@@ -176,8 +198,10 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
     if (req.method === "GET" && url.pathname === "/openapi.json") return OPENAPI ? send(res, 200, OPENAPI) : send(res, 404, { error: "openapi spec not bundled" });
     if (req.method === "GET" && url.pathname === "/api/events") return send(res, 200, Object.values(ERC4626_EVENTS).map((e) => ({ name: e.name, signature: e.signature, topic0: e.topic0 })));
+    if (req.method === "GET" && url.pathname === "/v1/health") return send(res, 200, { service: "lute", status: "ok", verifierCommit: process.env.LUTE_VERIFIER_COMMIT ?? "unknown" });
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs") return send(res, 200, { packs: [packManifest()] });
     if (req.method === "GET" && url.pathname === "/v1/integrity-packs/erc4626@1") return send(res, 200, packManifest());
+    if (req.method === "GET" && url.pathname === "/v1/dashboard") return send(res, 200, dashboardSnapshot());
 
     const verificationMatch = url.pathname.match(/^\/v1\/verifications\/([^/]+)(?:\/(evidence|manifest))?$/);
     if (req.method === "GET" && verificationMatch) {

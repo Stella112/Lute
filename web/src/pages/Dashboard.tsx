@@ -10,6 +10,8 @@ import { Overview } from "./dashboard/Overview";
 import { ExternalAudit } from "./dashboard/ExternalAudit";
 import { Packs } from "./dashboard/Packs";
 import { EmptyState } from "./dashboard/EmptyState";
+import { Runs } from "./dashboard/Runs";
+import { Monitoring } from "./dashboard/Monitoring";
 
 type SectionKey =
   | "overview" | "projects" | "runs" | "packs" | "deployments"
@@ -82,10 +84,10 @@ export default function Dashboard() {
           {active === "external" && <ExternalAudit />}
           {active === "packs" && <Packs />}
           {active === "projects" && <EmptyState icon={FolderGit2} title="Projects" body="Connect a Graph deployment to start tracking verification runs, deployments, and integrity over time." />}
-          {active === "runs" && <EmptyState icon={ShieldCheck} title="Verification Runs" body="Every audit produces a Verification Run with checks, evidence, and a candidate hash. Run an audit from External Audit to create one." />}
+          {active === "runs" && <Runs />}
           {active === "deployments" && <EmptyState icon={Rocket} title="Deployments" body="The Deployment Gate only clears a candidate whose verified hash matches. Deployments will appear here once a project is connected." />}
           {active === "incidents" && <EmptyState icon={AlertTriangle} title="Incidents" body="Integrity drift detected after deployment opens an incident with first-divergence evidence and a repair lifecycle." />}
-          {active === "monitoring" && <EmptyState icon={Activity} title="Monitoring" body="Runtime health and data integrity are tracked separately. Connect a deployment to see live monitoring." />}
+          {active === "monitoring" && <Monitoring />}
           {active === "settings" && <EmptyState icon={Settings} title="Settings" body="Workspace, RPC endpoints, integrity-pack policy, and deployment-gate rules will be configured here." />}
 
           {active === "overview" && (

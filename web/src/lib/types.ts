@@ -43,12 +43,60 @@ export type IntegrityPack = {
   name: string;
   version: string;
   standard: string;
+  events: string[];
   strongChecks: string[];
   conditionalChecks: string[];
-  fields: string[];
+  unsupportedClaims: string[];
   status: "STABLE" | "BETA" | "COMING_SOON";
 };
 
 export type VerificationRunRow = { project: string; pack: string; verdict: Verdict; coverage: string; updated: string };
 export type Incident = { title: string; project: string; severity: "SEV-1" | "SEV-2" | "SEV-3"; age: string };
 export type MonitorRow = { label: string; state: "Healthy" | "Synced" | "Diverged" | "Degraded"; value: string };
+
+export type DashboardSnapshot = {
+  service: string;
+  status: "ok";
+  verifierCommit: string;
+  packs: {
+    id: string;
+    version: string;
+    standard: string;
+    supportedChains: string[];
+    requiredSources: string[];
+    events: string[];
+    strongChecks: string[];
+    conditionalChecks: string[];
+    unsupportedClaims: string[];
+  }[];
+  stats: {
+    totalRuns: number;
+    verifiedRuns: number;
+    failedRuns: number;
+    inconclusiveRuns: number;
+    lastVerificationAt: string | null;
+  };
+  latest: VerificationRun | null;
+  runs: VerificationRun[];
+};
+
+export type VerificationRun = {
+  runId: string;
+  candidateHash: string;
+  candidate: { candidateHash: string; fileCount: number; files: { path: string; sha256: string; bytes: number }[] };
+  integrityPack: { id: string; version: string };
+  report: AuditReport;
+  coverage: {
+    strongChecksPassed: number;
+    strongChecksTotal: number;
+    conditionalChecksPassed: number;
+    conditionalChecksTotal: number;
+    eventsChecked: number;
+    blocksChecked: string;
+    sourcesComplete: boolean;
+  };
+  evidenceRoot: string;
+  verdict: Verdict;
+  createdAt: string;
+  revoked: boolean;
+};

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 
 import type { CandidateManifest } from "./candidate.js";
@@ -109,6 +109,27 @@ export function loadVerificationRun(value: string): VerificationRun {
     throw new Error(`invalid VerificationRun evidence root: ${path}`);
   }
   return run;
+}
+
+/** Load the newest persisted runs for dashboard/API consumers. Invalid files are ignored so
+ * one interrupted write cannot take the whole dashboard offline. */
+export function listVerificationRuns(limit = 25): VerificationRun[] {
+  const dir = defaultRunsDir();
+  if (!existsSync(dir)) return [];
+  const paths = readdirSync(dir)
+    .filter((name) => name.endsWith(".json"))
+    .map((name) => join(dir, name));
+  const runs: VerificationRun[] = [];
+  for (const path of paths) {
+    try {
+      runs.push(loadVerificationRun(path));
+    } catch {
+      // Ignore malformed or partially-written historical files.
+    }
+  }
+  return runs
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, Math.max(0, limit));
 }
 
 export function freshnessFor(run: VerificationRun): boolean | undefined {
