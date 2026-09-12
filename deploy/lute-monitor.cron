@@ -1,0 +1,6 @@
+# Hourly production monitoring for the Lute dashboard.
+# The fixed watchlist is loaded by the API from lute.monitor.example.json.
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+0 * * * * root /usr/bin/flock -n /run/lute-monitor.lock /usr/bin/curl --fail --silent --show-error --output /dev/null --request POST http://127.0.0.1:8788/v1/monitoring/run

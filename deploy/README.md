@@ -117,6 +117,10 @@ the missing event and bisects to it. Nothing about the bug is known to the verif
   `lute.targets.example.json` for the three-target CLI demo, including its intentional
   bugged mapping.
 
+- To enable recurring checks on a host, install `deploy/lute-monitor.cron` as
+  `/etc/cron.d/lute-monitor`. It runs the fixed production watchlist hourly, uses
+  `flock` to prevent overlap, and writes no response body to a log.
+
 ## Teardown
 
 ```bash
