@@ -44,8 +44,7 @@ const CANDIDATE_DIR = process.env.LUTE_CANDIDATE_DIR ?? "subgraph";
 
 type Requirements = {
   scheme: "exact"; network: string; amount: string; payTo: string;
-  maxTimeoutSeconds: number; asset: string; resource: string; description: string;
-  mimeType: string; extra?: Record<string, unknown>;
+  maxTimeoutSeconds: number; asset: string; extra?: Record<string, unknown>;
 };
 
 let FEE_PAYER: string | undefined; // facilitator's Hedera fee-payer, from /supported
@@ -124,12 +123,13 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
 
   const requirements: Requirements = {
     scheme: "exact", network: NETWORK, amount: q.tinybars, payTo: PAY_TO,
-    maxTimeoutSeconds: 300, asset: ASSET_HBAR, resource, mimeType: "application/json",
-    description: `Lute ${q.tier} verification of ${eventName} on ${contract} [${fromBlock}-${toBlock}]`,
+    maxTimeoutSeconds: 300, asset: ASSET_HBAR,
     ...(FEE_PAYER ? { extra: { feePayer: FEE_PAYER } } : {}),
   };
 
-  const header = req.headers["x-payment"];
+  const paymentSignature = req.headers["payment-signature"];
+  const legacyPayment = req.headers["x-payment"];
+  const header = typeof paymentSignature === "string" ? paymentSignature : legacyPayment;
   if (!header || typeof header !== "string") {
     return sendPaymentRequired(res, resource, "payment required", requirements);
   }
@@ -185,7 +185,8 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
       file,
     },
   };
-  send(res, 200, toJSON(result), { "X-PAYMENT-RESPONSE": Buffer.from(JSON.stringify(settle)).toString("base64") });
+  const paymentResponse = Buffer.from(JSON.stringify(settle), "utf8").toString("base64");
+  send(res, 200, toJSON(result), { "PAYMENT-RESPONSE": paymentResponse, "X-PAYMENT-RESPONSE": paymentResponse });
 }
 
 const server = createServer((req, res) => {

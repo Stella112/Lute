@@ -54,12 +54,10 @@ test("paid server emits an x402 v2 payment-required header", () => {
     payTo: "0.0.123",
     maxTimeoutSeconds: 300,
     asset: "0.0.0",
-    resource: "https://uselute.xyz/v1/paid/audits",
-    description: "Lute quick verification",
-    mimeType: "application/json",
   };
-  const paymentRequired = buildPaymentRequired(requirements.resource, "payment required", requirements);
+  const resource = "https://uselute.xyz/v1/paid/audits";
+  const paymentRequired = buildPaymentRequired(resource, "payment required", requirements);
   assert.equal(paymentRequired.body.x402Version, 2);
-  assert.equal(paymentRequired.body.resource.url, requirements.resource);
+  assert.equal(paymentRequired.body.resource.url, resource);
   assert.deepEqual(JSON.parse(Buffer.from(paymentRequired.header, "base64").toString("utf8")), paymentRequired.body);
 });
