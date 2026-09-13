@@ -226,7 +226,7 @@ function TrustManifest() {
             Every deployment carries a cryptographic, machine-readable Trust Manifest. Verify
             what's running, why it's trustworthy, and trace it back to canonical evidence.
           </p>
-          <Button href="#audit" variant="secondary">Learn about Trust Manifests <ArrowRight size={15} /></Button>
+          <Button href="/docs#evidence" variant="secondary">Learn about Trust Manifests <ArrowRight size={15} /></Button>
         </div>
         <div className="trust__panels">
           <div className="code trust__code">
@@ -270,8 +270,8 @@ function FinalCTA() {
 
 function Footer() {
   const cols = [
-    ["Product", ["Overview", "Integrations", "Docs", "About"]],
-    ["Resources", ["Trust Manifest", "Integrity Packs", "Evidence Graph"]],
+    ["Product", [["Overview", "/#top"], ["Integrations", "/#ecosystem"], ["Docs", "/docs"], ["About", "/#assurance"]]],
+    ["Resources", [["Trust Manifest", "/docs#evidence"], ["Integrity Packs", "/docs#connections"], ["Evidence Graph", "/docs#evidence"]]],
   ] as const;
   return (
     <footer className="footer">
@@ -279,7 +279,7 @@ function Footer() {
         <div className="footer__grid">
           <div className="footer__brand"><Logo /><p className="muted">The AI-native CI/CD and integrity layer for The Graph.</p></div>
           {cols.map(([h, links]) => (
-            <div key={h} className="footer__col"><h5>{h}</h5>{links.map((l) => <a key={l} href="#top">{l}</a>)}</div>
+            <div key={h} className="footer__col"><h5>{h}</h5>{links.map(([label, href]) => <a key={label} href={href}>{label}</a>)}</div>
           ))}
         </div>
         <div className="footer__base">

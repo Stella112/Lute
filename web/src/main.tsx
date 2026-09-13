@@ -7,6 +7,7 @@ import "./styles/tokens.css";
 import "./styles/components.css";
 import "./styles/landing.css";
 import "./styles/dashboard.css";
+import "./styles/docs.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

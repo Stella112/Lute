@@ -4,10 +4,10 @@ import { Logo } from "../Logo";
 import { Button, ThemeToggle } from "../ui";
 
 const LINKS = [
-  { label: "Product", href: "#lifecycle" },
-  { label: "Integrations", href: "#ecosystem" },
-  { label: "Docs", href: "#trust" },
-  { label: "About", href: "#assurance" },
+  { label: "Product", href: "/#lifecycle" },
+  { label: "Integrations", href: "/#ecosystem" },
+  { label: "Docs", href: "/docs" },
+  { label: "About", href: "/#assurance" },
 ];
 
 export function Nav() {
@@ -24,7 +24,7 @@ export function Nav() {
   return (
     <header className={`nav ${scrolled ? "nav--scrolled" : ""}`}>
       <div className="nav__inner container">
-        <a href="#top" className="nav__brand"><Logo /></a>
+        <a href="/" className="nav__brand"><Logo /></a>
 
         <nav className="nav__links" aria-label="Primary">
           {LINKS.map((l) => <a key={l.label} href={l.href}>{l.label}</a>)}
