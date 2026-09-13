@@ -45,8 +45,14 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 - Gateway operations: generated from `https://uselute.xyz/openapi.json`; the current
   audit tools expose query-shaped top-level MCP arguments (`contract`, `fromBlock`,
   `toBlock`, with optional `event` and `subgraph`).
-- Paid gateway smoke test: `NOT RECORDED AS PASSING` — a paid request has not been
-  re-run after the replacement gateway was created, so no paid success is claimed.
+- Paid gateway smoke test: `PASSING` on 2026-09-13 through Bazantic's native client.
+  The replacement gateway charged `0.01 USDC` on Base and returned HTTP `200` with
+  verdict `VERIFIED`, `75` raw events, `75` indexed events, and all 9 strong checks
+  passing. Base transaction:
+  `0x8dfd35054f8116ab57c8cb1a8524b04464d93c078491f59131418d85da216b1a`
+  (`https://basescan.org/tx/0x8dfd35054f8116ab57c8cb1a8524b04464d93c078491f59131418d85da216b1a`).
+  VerificationRun: `d20c65f1-6b9b-44cd-991d-31d736af4dd7`; evidence root:
+  `33ec058b65bf67aa7ce84db81b36a5da154395839e095a058e5bd52c76d32b8de`.
 - Historical provider issue: the previous active gateway
   `374274w6xnchrppsi33r2y2xfy` returned HTTP 400 (`request body must be valid JSON`)
   after its payment challenge. The replacement gateway was created with the corrected
@@ -61,13 +67,13 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
   events; run `e1ef6faf-d08a-44f6-bc4e-75c7f8fb459f`.
 - Verify Before Trust Recipe: `verify-before-trust-graph-lute` — `published`; it binds
   `queryGraphEvents` and `auditVault`.
-- Bazantic account username: `NOT RECORDED`
+- Bazantic account username: `mebostellamaris`
 - Other sponsor service used by the Recipe: The Graph Subgraph Studio
 
 ## Media and submission
 
 - Demo video URL: `NOT RECORDED`
 - Submission URL: `NOT RECORDED`
-- Last evidence review date: `NOT RECORDED`
+- Last evidence review date: `2026-09-13`
 
 Do not replace these entries with invented URLs, transaction IDs, counts, or screenshots.

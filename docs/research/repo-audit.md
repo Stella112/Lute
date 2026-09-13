@@ -39,7 +39,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Monitoring (runtime vs integrity) + incidents | 🟡 UI only (demo) | `web/` |
 | Hedera paid audit via **Blocky402** + real paid request | 🟡 v2 server/agent implemented and offline-tested; live paid request not recorded | `src/paid/`, `test/paid.test.ts` |
 | HCS attestation | ✅ live testnet (topic `0.0.10485368`) | `src/hedera.ts` |
-| Bazantic Gateway + Verify-Before-Trust Recipe | ✅ live Lute + Graph gateways and published Recipe; paid smoke evidence still pending | `bazantic/`, `docs/judging/evidence.md` |
+| Bazantic Gateway + Verify-Before-Trust Recipe | ✅ live Lute + Graph gateways, published Recipe, and paid 0.01 USDC Base smoke test returning VERIFIED 75/75 | `bazantic/`, `docs/judging/evidence.md` |
 | Light/dark evidence-first UI | ✅ landing + dashboard | `web/` |
 | No fake live data / no secrets committed | ✅ (`.env` gitignored; demo namespaced) | — |
 | Tests pass | ✅ 39 backend offline + live; frontend builds | `test/` |
@@ -49,9 +49,8 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 1. **Live Hedera evidence** — currently blocked by the external Blocky402 facilitator fee-payer signature; run one approved funded testnet request after that is repaired.
 2. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
 3. **Broaden Build + Repair beyond the first ERC-4626 workflow and wire current Graph skills** — §10/11/27/29.
-4. **Bazantic paid end-to-end smoke evidence** — the live gateways and Recipe exist; a paid request still needs approved caller credit — §22/53/54.
-5. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
-6. `openapi/lute.yaml` alignment and the remaining architecture docs.
+4. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
+5. `openapi/lute.yaml` alignment and the remaining architecture docs.
 
 ## Invariant check on existing verifier
 - INVARIANT A (candidate vs verifier independence): ✅ verifier decodes raw logs; never runs candidate mapping.

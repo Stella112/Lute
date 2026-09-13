@@ -61,6 +61,15 @@ baz curl 'https://<your-gateway>/api/audit?contract=0xbeeF010f9cb27031ad51e3333f
   --account agent-1 --max-amount 0.02 --yes --json
 ```
 
+On Windows, if the npm-generated `baz.cmd` shim splits a quoted URL at `&`, invoke
+the installed Node entry point directly so every query parameter is preserved:
+
+```powershell
+$bazJs = Join-Path $env:APPDATA 'npm\node_modules\@bazantic\cli\bin\bazantic.js'
+$url = 'https://<your-gateway>/api/audit?contract=0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183&event=Deposit&fromBlock=51115000&toBlock=51125000&subgraph=graphstudio'
+node $bazJs curl $url -X POST --account agent-1 --max-amount 0.02 --yes --json
+```
+
 `baz curl` returns `{ ok, status, paid, body }`, where `body` is the Lute `AuditReport`.
 The gateway-facing operation uses query parameters so the paid retry does not depend
 on a proxy preserving a JSON request body. Lute's direct REST endpoints still accept
@@ -72,5 +81,8 @@ candidate directly, pass `subgraph=graphstudio`.
 - Built and live: the public Lute upstream, the Lute audit gateway, the Graph provider
   gateway, and the published Recipe. Free MCP discovery and the free two-service
   backend flow have been verified.
-- A paid end-to-end call still requires the caller's own Bazantic account, wallet, or
-  approved test credit. Do not commit or share payment credentials.
+- Paid end-to-end gateway execution is verified: a `0.01 USDC` Base payment returned
+  HTTP `200` and a `VERIFIED` 75/75 Graph Studio audit. The public transaction is
+  `0x8dfd35054f8116ab57c8cb1a8524b04464d93c078491f59131418d85da216b1a`.
+  Reproduction still requires the caller's own Bazantic account, wallet, or approved
+  grant. Do not commit or share payment credentials.
