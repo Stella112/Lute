@@ -11,8 +11,11 @@ import { Client, PrivateKey, Hbar, AccountBalanceQuery } from "@x402/hedera";
 import { AccountCreateTransaction } from "@hiero-ledger/sdk";
 import { ExactHederaScheme, createClientHederaSigner } from "@x402/hedera";
 import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
+import { quote } from "./quote.js";
 
 const PAID_URL = (process.env.PAID_URL ?? "http://localhost:8793").replace(/\/$/, "");
+const FROM_BLOCK = process.env.PAID_FROM_BLOCK ?? "51115000";
+const TO_BLOCK = process.env.PAID_TO_BLOCK ?? "51125000";
 
 function operatorClient(): Client {
   const id = process.env.HEDERA_OPERATOR_ID;
@@ -71,7 +74,8 @@ async function main() {
     });
   const paidFetch = wrapFetchWithPayment(globalThis.fetch, paymentClient);
   const url = `${PAID_URL}/v1/paid/audits`;
-  const body = JSON.stringify({ contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183", event: "Deposit", fromBlock: 51115000, toBlock: 51125000, subgraph: "morpho" });
+  const requestedQuote = quote(BigInt(FROM_BLOCK), BigInt(TO_BLOCK));
+  const body = JSON.stringify({ contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183", event: "Deposit", fromBlock: FROM_BLOCK, toBlock: TO_BLOCK, subgraph: "morpho" });
 
   // balance before
   const payerClient = Client.forTestnet().setOperator(agent.id, agentPrivateKey);
@@ -85,7 +89,7 @@ async function main() {
   // The official x402 fetch wrapper performs the exact three-step flow:
   // request -> 402 requirements -> partially signed Hedera transfer -> retry.
   // The resource server then verifies, runs the audit, and settles via Blocky402.
-  process.stderr.write(`requesting paid audit at ${url} …\n`);
+  process.stderr.write(`requesting paid audit at ${url} (${requestedQuote.blocks} blocks; expected ${requestedQuote.hbar} HBAR) …\n`);
   const response = await paidFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -94,6 +98,11 @@ async function main() {
   const json = await response.json();
   const settleHeader = response.headers.get("payment-response") ?? response.headers.get("x-payment-response");
   const settlement = settleHeader ? JSON.parse(Buffer.from(settleHeader, "base64").toString("utf8")) : null;
+
+  const paid = (json as { paid?: { amount?: string } }).paid;
+  if (response.ok && paid?.amount !== requestedQuote.tinybars) {
+    throw new Error(`server quote mismatch: expected ${requestedQuote.tinybars} tinybars, received ${paid?.amount ?? "missing"}`);
+  }
 
   console.log(JSON.stringify({ status: response.status, result: json, settlement }, null, 2));
 }

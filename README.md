@@ -343,17 +343,22 @@ uses `@x402/fetch` to handle the 402 → sign → retry flow.
 ```bash
 # Set HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY in a local, ignored .env first.
 node --env-file=.env --import tsx src/paid/server.ts
-# In another terminal, with a funded Hedera testnet payer:
+# In another terminal, with a funded Hedera testnet payer. The default demo range is
+# 10,001 blocks and costs the standard 1 HBAR quote. For the quick 101-block / 0.5 HBAR
+# tier, set the range explicitly:
+PAID_FROM_BLOCK=51115000 PAID_TO_BLOCK=51115100 \
 node --env-file=.env --import tsx src/paid/agent.ts
 ```
 
 Set `PAID_PUBLIC_URL` to the externally reachable HTTPS origin when running behind a
 proxy; it is part of the signed x402 resource requirement. The endpoint bounds request
 body size and block-range span, rejects caller-supplied graph-node URLs, and returns a
-400/413 for invalid requests before asking Blocky402 to verify payment. A real paid
-request still requires a funded testnet payer and should be recorded separately in
-[`docs/judging/evidence.md`](docs/judging/evidence.md); tests do not pretend to settle
-payments.
+400/413 for invalid requests before asking Blocky402 to verify payment. A non-spending
+preflight is available on the deployed image:
+`node --import tsx src/paid/preflight.ts`. It validates the payer key against Mirror Node,
+builds the partially signed transfer, and stops before `/settle`. A real paid request
+still requires an explicitly approved funded testnet payer; tests do not pretend to
+settle payments.
 
 ## Checks implemented
 
@@ -394,9 +399,8 @@ real Graph Node path, monitoring incidents, generic x402 path, and the Blocky402
 implemented. The honest Lute subgraph is deployed to Graph Studio on Base and has been
 smoke-queried successfully. The first deterministic Base ERC-4626 Build workflow now
 scaffolds and compiles candidates. A guarded self-hosted Graph Node deploy command is
-also available; a recorded real paid Hedera request remains pending the external
-Blocky402 facilitator signer repair and must not be presented as complete until its
-settlement evidence is collected.
+also available; a recorded real paid Hedera request through Blocky402 is included in
+the judge evidence ledger.
 
 ## Build and repair workflow
 

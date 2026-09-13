@@ -32,8 +32,17 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 ## Hedera
 
 - Blocky402 facilitator: `https://api.testnet.blocky402.com`
-- Paid endpoint: `NOT RECORDED AS A PUBLIC HTTPS SERVICE`
-- Hedera payment transaction: `NOT RECORDED — requires an approved funded testnet request`
+- Paid endpoint: `https://uselute.xyz/v1/paid/audits`
+- Live paid request: Blocky402 `/verify` accepted the buyer-signed Hedera transfer,
+  Lute completed the real 75-event audit, and Blocky402 `/settle` returned HTTP 200.
+  The settlement transferred `1 HBAR` (`100000000` tinybars) from payer
+  `0.0.10484280` to Lute `0.0.10483052` on Hedera testnet. Mirror Node recorded
+  `SUCCESS` with transaction ID `0.0.7162784-1789290230-015764738` and charged fee
+  `265223` tinybars. [View on HashScan](https://hashscan.io/#/testnet/transaction/0.0.7162784-1789290230-015764738).
+- Paid audit result: `VERIFIED`, raw `75`, indexed `75`, `7/9` checks passing; the
+  Morpho source does not expose `sender`/`owner`, so those two fields are honestly
+  `UNVERIFIED`. Run ID `eade836f-4ac8-418a-a5c1-839c4f9b9196`; evidence root
+  `995194377384157c3a0670bf19688375621542386c58aab6fa44ea6e66f9bb17`.
 - HCS topic/message: see the output of `lute attest`; current local topic is not a
   substitute for a payment-flow record.
 
