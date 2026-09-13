@@ -12,6 +12,7 @@
 // (default https://api.testnet.blocky402.com), PAID_PORT (default 8793).
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { HTTPFacilitatorClient } from "@x402/core/server";
 
 import { runAudit } from "../audit.js";
 import { toJSON } from "../bigint.js";
@@ -41,6 +42,7 @@ const PUBLIC_BASE_URL = (process.env.PAID_PUBLIC_URL ?? `http://localhost:${PORT
 const MAX_BLOCK_SPAN = parsePositiveBigInt(process.env.PAID_MAX_BLOCK_SPAN, DEFAULT_MAX_BLOCK_SPAN);
 const MAX_BODY_BYTES = parsePositiveNumber(process.env.PAID_MAX_BODY_BYTES, DEFAULT_MAX_BODY_BYTES);
 const CANDIDATE_DIR = process.env.LUTE_CANDIDATE_DIR ?? "subgraph";
+const facilitatorClient = new HTTPFacilitatorClient({ url: FACILITATOR, timeoutMs: 120_000 });
 
 type Requirements = {
   scheme: "exact"; network: string; amount: string; payTo: string;
@@ -63,13 +65,10 @@ async function loadFeePayer(): Promise<void> {
 }
 
 async function facilitator(path: "/verify" | "/settle", payload: unknown, requirements: Requirements) {
-  const res = await fetch(`${FACILITATOR}${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ x402Version: X402_VERSION, paymentPayload: payload, paymentRequirements: requirements }),
-  });
-  if (!res.ok) throw new Error(`facilitator ${path} HTTP ${res.status}: ${await res.text()}`);
-  return res.json();
+  // Use the protocol SDK's canonical v2 wire client so verify and settle receive
+  // exactly the same payment payload/requirements envelope.
+  if (path === "/verify") return facilitatorClient.verify(payload as never, requirements as never);
+  return facilitatorClient.settle(payload as never, requirements as never);
 }
 
 function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) {

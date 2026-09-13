@@ -30,6 +30,7 @@
     "@hashgraph/sdk": "^2.81.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@substreams/core": "^0.17.0",
+    "@x402/core": "^2.25.0",
     "@x402/fetch": "^2.25.0",
     "@x402/hedera": "^2.25.0",
     "js-sha3": "0.9.3",
