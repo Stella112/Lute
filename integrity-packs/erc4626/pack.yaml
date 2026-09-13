@@ -16,6 +16,7 @@ strongChecks:
   - transaction_provenance
   - block_provenance
   - field_accuracy
+conditionalChecks: []
 policies:
   failClosed: true
   requireFinalizedRange: true

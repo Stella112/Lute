@@ -9,7 +9,10 @@
     "standard": { "const": "ERC-4626" },
     "supportedChains": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "requiredSources": { "type": "array", "items": { "enum": ["RAW_RPC", "SUBGRAPH", "SUBSTREAMS"] } },
+    "events": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "strongChecks": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "conditionalChecks": { "type": "array", "items": { "type": "string" } },
+    "policies": { "type": "object", "required": ["failClosed", "requireFinalizedRange"], "properties": { "failClosed": { "const": true }, "requireFinalizedRange": { "const": true } } },
     "unsupportedClaims": { "type": "array", "items": { "type": "string" } }
   },
   "additionalProperties": true

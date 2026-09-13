@@ -44,7 +44,7 @@ test("Integrity Pack API is available without network access", async () => {
     const response = await fetch(`http://127.0.0.1:${address.port}/v1/integrity-packs`);
     assert.equal(response.status, 200);
     const body = (await response.json()) as { packs: { id: string; version: string }[] };
-    assert.deepEqual(body.packs[0], { id: "erc4626", version: "1", standard: "ERC-4626", supportedChains: ["base"], requiredSources: ["RAW_RPC", "SUBGRAPH"], events: ["Deposit", "Withdraw"], strongChecks: ["event_count", "duplicate_detection", "event_presence", "transaction_provenance", "block_provenance", "field_accuracy"], conditionalChecks: [], unsupportedClaims: ["APY", "arbitrary vault strategy accounting"] });
+    assert.deepEqual(body.packs[0], { id: "erc4626", version: "1", standard: "ERC-4626", supportedChains: ["base"], requiredSources: ["RAW_RPC", "SUBGRAPH"], events: ["Deposit", "Withdraw"], strongChecks: ["event_count", "duplicate_detection", "event_presence", "transaction_provenance", "block_provenance", "field_accuracy"], conditionalChecks: [], policies: { failClosed: true, requireFinalizedRange: true }, unsupportedClaims: ["APY", "arbitrary vault strategy accounting"] });
     const dashboard = await fetch(`http://127.0.0.1:${address.port}/v1/dashboard`);
     assert.equal(dashboard.status, 200);
     const dashboardBody = (await dashboard.json()) as { service: string; status: string; stats: { totalRuns: number }; packs: unknown[]; gate: unknown };

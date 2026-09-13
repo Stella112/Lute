@@ -19,9 +19,9 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Raw RPC reader works (chunk/retry/fail-closed) | ✅ | `src/rpc.ts`, `src/canonical.ts` |
 | Graph adapter uses live Graph data | ✅ (graph-node subgraph + Morpho) | `src/subgraph/graphNode.ts`, `morpho.ts` |
 | Canonical event model | ✅ | `src/types.ts`, `src/canonical.ts`, `src/abi.ts` |
-| ERC-4626 Integrity Pack | 🟡 partial — checks exist, not yet a `pack.yaml` standard/SDK | `src/reconcile.ts`, `src/abi.ts` |
+| ERC-4626 Integrity Pack | ✅ reviewed `pack.yaml` + schema + runtime SDK/artifact endpoint | `integrity-packs/erc4626`, `src/integrity-pack.ts` |
 | Reconciliation + first divergence | ✅ (bisection engine) | `src/reconcile.ts`, `src/divergence.ts` |
-| Evidence Graph (block→…→verdict lineage IDs) | 🟡 partial — firstDivergence carries evidence, no formal lineage IDs | `src/divergence.ts` |
+| Evidence Graph (block→…→verdict lineage IDs) | ✅ portable pack emits stable run/source/check/divergence/verdict lineage IDs | `src/integrity-pack.ts` |
 | Fail-closed check statuses | ✅ | `src/audit.ts` (decideVerdict), negative tests |
 | Explicit coverage | 🟡 partial — checks list yes; strong/conditional counts not formalized | `src/reconcile.ts` |
 | Correct real candidate verifies (75==75 VERIFIED) | ✅ | live + `evidence_*.json` |
@@ -32,7 +32,7 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | Repair workflow + reverification | 🟡 deterministic RepairContext + opt-in known identity fix; fresh verification/gate remain explicit | `src/repair.ts`, `src/cli.ts` |
 | Deploy exact verified candidate to Studio + smoke query | ✅ generated candidate `v0.1.1` deployed to Graph Studio on Base; post-deploy differential verification and entity smoke query passed | `src/build.ts`, `deploy/`, `subgraph/` |
 | External Audit for a supported deployment | ✅ (real, via UI + backend) | `web/.../ExternalAudit.tsx`, `/api/audit` |
-| Trust Manifest | 🟡 UI + attestation payload; no formal `TrustManifest` schema/route | `src/hedera.ts`, UI |
+| Trust Manifest | ✅ formal TrustManifest is included in each portable pack artifact | `src/integrity-pack.ts`, `/v1/verifications/{runId}/pack` |
 | Lute MCP | ✅ (audit/explain/supported_events) — smaller tool set than §37 | `src/mcp.ts` |
 | OpenAPI spec | 🟡 `bazantic/openapi.json` exists; not the full `openapi/lute.yaml` (§39) | `bazantic/openapi.json` |
 | Reusable Substreams path (live) | ✅ live differential verified: Deposit 75/75 and Withdraw 109/109 | `src/subgraph/substreams.ts`, `test/substreams.test.ts` |
@@ -46,10 +46,9 @@ monorepo shape is optional and should not block core work; noted as a discrepanc
 | README reproducible / demo script / judge evidence | ✅ README, demo script, and honest evidence ledger | `README.md`, `docs/demo/`, `docs/judging/` |
 
 ## Biggest gaps to close for the contract (priority)
-1. **Integrity Pack SDK + `pack.yaml` standard** — §17/18.
-2. **Broaden Build + Repair beyond the first ERC-4626 workflow and wire current Graph skills** — §10/11/27/29.
-3. Persisted VerificationRun/TrustManifest/Evidence Graph and real monitoring incidents.
-4. `openapi/lute.yaml` alignment and the remaining architecture docs.
+1. **Broaden Build + Repair beyond the first ERC-4626 workflow and wire current Graph skills** — §10/11/27/29.
+2. Add richer persisted monitoring incidents and automated re-verification history.
+3. `openapi/lute.yaml` alignment and the remaining architecture docs.
 
 ## Invariant check on existing verifier
 - INVARIANT A (candidate vs verifier independence): ✅ verifier decodes raw logs; never runs candidate mapping.

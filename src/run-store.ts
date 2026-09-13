@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join } from "node:path";
 
 import type { CandidateManifest } from "./candidate.js";
 import { evidenceRoot } from "./evidence.js";
+import type { PaymentReceipt } from "./integrity-pack.js";
 import type { AuditReport, CheckResult, Verdict } from "./types.js";
 
 export type VerificationCoverage = {
@@ -31,6 +32,8 @@ export type VerificationRun = {
   verdict: Verdict;
   createdAt: string;
   revoked: boolean;
+  /** Public settlement metadata only; never a secret or signing material. */
+  payment?: PaymentReceipt;
 };
 
 export function coverageFor(report: AuditReport): VerificationCoverage {
@@ -60,6 +63,7 @@ export function createVerificationRun(args: {
   verifierVersion?: string;
   verifierCommit?: string;
   integrityPack?: { id: string; version: string };
+  payment?: PaymentReceipt;
 }): VerificationRun {
   return {
     schemaVersion: 1,
@@ -75,6 +79,7 @@ export function createVerificationRun(args: {
     verdict: args.report.verdict,
     createdAt: new Date().toISOString(),
     revoked: false,
+    ...(args.payment ? { payment: args.payment } : {}),
   };
 }
 

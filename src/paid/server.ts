@@ -166,15 +166,28 @@ async function handlePaid(req: IncomingMessage, res: ServerResponse, resource: s
   // Persist the paid result in the same evidence store as free audits so the live
   // dashboard can show the paid verification history after container restarts.
   const candidate = buildCandidateManifest(CANDIDATE_DIR);
+  const paymentReceipt = {
+    protocol: "x402" as const,
+    facilitator: FACILITATOR,
+    network: settle.network ?? NETWORK,
+    transaction: settle.transaction,
+    payer: settle.payer ?? verify.payer,
+    payTo: PAY_TO,
+    feePayer: FEE_PAYER,
+    amount: q.tinybars,
+    asset: ASSET_HBAR,
+    tier: q.tier,
+  };
   const stored = createVerificationRun({
     report,
     candidate,
     evidenceRoot: report.evidenceRoot ?? evidenceRoot(report),
+    payment: paymentReceipt,
   });
   const file = saveVerificationRun(stored);
 
   const result = {
-    paid: { transaction: settle.transaction, network: settle.network, payer: settle.payer, amount: q.tinybars, asset: ASSET_HBAR, tier: q.tier },
+    paid: paymentReceipt,
     verdict: report.verdict,
     summary: summarize(report),
     report,

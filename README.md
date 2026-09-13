@@ -360,6 +360,29 @@ builds the partially signed transfer, and stops before `/settle`. A real paid re
 still requires an explicitly approved funded testnet payer; tests do not pretend to
 settle payments.
 
+## Portable Integrity Packs and judge smoke test
+
+The reviewed ERC-4626 pack lives in [`integrity-packs/erc4626`](integrity-packs/erc4626)
+and is loaded by the runtime SDK in [`src/integrity-pack.ts`](src/integrity-pack.ts).
+After any persisted verification, download the portable artifact:
+
+```bash
+curl -s https://uselute.xyz/v1/verifications/<runId>/pack | jq
+```
+
+The artifact contains the `erc4626@1` pack definition, a TrustManifest bound to the
+candidate hash and evidence root, the complete report and coverage, stable lineage ids,
+and public x402 settlement metadata when the run was paid. It never contains keys or
+signing material.
+
+From a fresh clone, run the no-secrets public smoke test. Add `--audit` to execute one
+free live 75-event audit against the public service:
+
+```bash
+npm run judge:smoke
+npm run judge:smoke -- --audit
+```
+
 ## Checks implemented
 
 `event_count`, `event_presence` (bidirectional: missing + phantom), `transaction_provenance`,

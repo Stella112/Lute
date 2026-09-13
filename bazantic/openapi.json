@@ -70,6 +70,15 @@
         "responses": { "200": { "description": "Candidate manifest" } }
       }
     },
+    "/v1/verifications/{runId}/pack": {
+      "get": {
+        "operationId": "getIntegrityPackArtifact",
+        "summary": "Get the portable Integrity Pack artifact for a run",
+        "description": "Returns the reviewed pack definition, TrustManifest, candidate hash, complete audit evidence, stable lineage ids, and public payment receipt metadata when the run was paid.",
+        "parameters": [{ "$ref": "#/components/parameters/RunId" }],
+        "responses": { "200": { "description": "Portable Integrity Pack artifact", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IntegrityPackArtifact" } } } }, "404": { "description": "Run not found" } }
+      }
+    },
     "/v1/integrity-packs": {
       "get": { "operationId": "listIntegrityPacks", "summary": "List supported Integrity Packs", "responses": { "200": { "description": "Integrity Packs" } } }
     },
@@ -192,6 +201,19 @@
           "evidenceRoot": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "verdict": { "type": "string", "enum": ["VERIFIED", "FAILED", "INCONCLUSIVE"] },
           "revoked": { "type": "boolean" }
+        }
+      },
+      "IntegrityPackArtifact": {
+        "type": "object",
+        "required": ["schemaVersion", "pack", "trustManifest", "verification", "candidate", "evidence"],
+        "properties": {
+          "schemaVersion": { "const": 1 },
+          "pack": { "type": "object", "description": "The reviewed pack.yaml definition" },
+          "trustManifest": { "type": "object", "description": "Stable trust binding for verdict, candidate, subject, sources, and evidence root" },
+          "verification": { "type": "object", "description": "Complete AuditReport and coverage" },
+          "candidate": { "type": "object", "description": "Candidate hash and deterministic file manifest" },
+          "evidence": { "type": "object", "description": "Evidence root and stable block/source/check lineage ids" },
+          "payment": { "type": "object", "description": "Public x402 settlement metadata; never contains signing material" }
         }
       }
     },

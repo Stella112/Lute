@@ -21,6 +21,7 @@ import { createVerificationRun, freshnessFor, listVerificationRuns, loadVerifica
 import { listIncidents, loadIncident } from "./incidents.js";
 import { listMonitoringRuns, loadMonitoringTargets, runMonitoring, type MonitoringRun } from "./monitoring.js";
 import { GraphProviderError, queryGraphStudio } from "./graph-provider.js";
+import { createIntegrityPackArtifact, loadErc4626Pack } from "./integrity-pack.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -150,18 +151,8 @@ async function executeAudit(body: AuditBody, runId: string) {
   return runAudit({ rpc, contract: target.contract, eventName: target.eventName, fromBlock: target.fromBlock, toBlock: target.toBlock, subgraph: source, logger, runId });
 }
 
-function packManifest(): Record<string, unknown> {
-  return {
-    id: "erc4626",
-    version: "1",
-    standard: "ERC-4626",
-    supportedChains: ["base"],
-    requiredSources: ["RAW_RPC", "SUBGRAPH"],
-    events: ["Deposit", "Withdraw"],
-    strongChecks: ["event_count", "duplicate_detection", "event_presence", "transaction_provenance", "block_provenance", "field_accuracy"],
-    conditionalChecks: [],
-    unsupportedClaims: ["APY", "arbitrary vault strategy accounting"],
-  };
+function packManifest() {
+  return loadErc4626Pack();
 }
 
 function deploymentGateFor(latest: ReturnType<typeof listVerificationRuns>[number] | null) {
@@ -333,13 +324,14 @@ const server = createServer(async (req, res) => {
       return send(res, 200, result);
     }
 
-    const verificationMatch = url.pathname.match(/^\/v1\/verifications\/([^/]+)(?:\/(evidence|manifest))?$/);
+    const verificationMatch = url.pathname.match(/^\/v1\/verifications\/([^/]+)(?:\/(evidence|manifest|pack))?$/);
     if (req.method === "GET" && verificationMatch) {
       const id = verificationMatch[1]!;
       if (!isSafeRunId(id)) return send(res, 400, { error: "invalid verification id" });
       const run = loadVerificationRun(id);
       if (verificationMatch[2] === "evidence") return send(res, 200, { runId: run.runId, evidenceRoot: run.evidenceRoot, report: run.report });
       if (verificationMatch[2] === "manifest") return send(res, 200, run.candidate);
+      if (verificationMatch[2] === "pack") return send(res, 200, createIntegrityPackArtifact(run, run.payment));
       return send(res, 200, run);
     }
 

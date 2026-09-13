@@ -40,8 +40,19 @@ Useful read-only endpoints:
 
 - `GET https://uselute.xyz/api/events`
 - `GET https://uselute.xyz/v1/integrity-packs`
+- `GET https://uselute.xyz/v1/integrity-packs/erc4626@1`
 - `GET https://uselute.xyz/v1/verifications/{runId}`
 - `GET https://uselute.xyz/v1/verifications/{runId}/evidence`
+- `GET https://uselute.xyz/v1/verifications/{runId}/pack` — portable pack, TrustManifest,
+  candidate binding, evidence lineage, and public payment receipt metadata
+
+From a fresh clone, the no-secrets smoke test checks the public service and pack
+metadata. Add `--audit` to run the live free example as well:
+
+```bash
+npm run judge:smoke -- --base-url https://uselute.xyz
+npm run judge:smoke -- --base-url https://uselute.xyz --audit
+```
 
 ## 3. Connect through Bazantic MCP
 
