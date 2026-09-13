@@ -10,7 +10,7 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 - Base RPC network/range: recorded in each generated `AuditReport`
 - Real Graph deployment/query target: self-hosted Graph Node on the Qevor VPS,
   deployments `lute/steak-honest` and `lute/steak-bugged`; Lute image deployed from
-  commit `6d28a42`.
+  commit `c0f5dd7`.
 - Exact generated candidate deployment: Graph Studio project `lute`, Base version
   `v0.1.1`, query endpoint
   `https://api.studio.thegraph.com/query/1760216/lute/v0.1.1`; Qevor Build workflow
@@ -25,6 +25,12 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 - Reproduced bugged run: RAW_RPC `49`, indexed `48`, verdict `FAILED`; first divergence
   block `51120808`, transaction
   `0x443364da3be710fc49773b87fdb5ed88805f2fe09c4fbe1dd7cd130217d82260`, log index `496`.
+- Public judge smoke test: `PASSING` on 2026-09-13. Health, OpenAPI, the live
+  `erc4626@1` pack manifest, supported events, and a free live 75-event audit all
+  returned HTTP 200; the audit verdict was `VERIFIED` with evidence root
+  `5c57b687a4f3caa72b06cb301970087492f82dffe5a55318f506d99f87ddd02c`.
+- Portable Integrity Pack endpoint: `GET /v1/verifications/{runId}/pack` returns the
+  reviewed pack, TrustManifest, candidate binding, report, and stable evidence lineage.
 - Substreams package/deployment: `NOT RECORDED`
 - Fault benchmark results: offline controlled fixtures exist; qualifying live links:
   `NOT RECORDED`
