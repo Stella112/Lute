@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  LayoutGrid, FolderGit2, FileCode2, ShieldCheck, Boxes, Rocket, FileSearch, AlertTriangle,
-  Activity, Settings, PanelLeftClose, PanelLeftOpen, Search, Menu, Network, Hexagon, Plug, Layers,
+  LayoutGrid, FolderGit2, ShieldCheck, Boxes, Rocket, FileSearch, AlertTriangle,
+  Activity, Settings, PanelLeftClose, PanelLeftOpen, Search, Menu, Hexagon, Plug,
 } from "lucide-react";
 import { Logo } from "../components/Logo";
 import { Button, ThemeToggle } from "../components/ui";
@@ -14,26 +14,22 @@ import { Runs } from "./dashboard/Runs";
 import { Monitoring } from "./dashboard/Monitoring";
 import { Deployments } from "./dashboard/Deployments";
 import { Incidents } from "./dashboard/Incidents";
-import { ProjectList, Projects } from "./dashboard/Projects";
+import { Projects } from "./dashboard/Projects";
+import { IntegrationPage } from "./dashboard/IntegrationPages";
 
 type SectionKey =
-  | "overview" | "build" | "projects" | "verify" | "runs" | "packs"
-  | "deploy" | "gate" | "deployments" | "external"
-  | "incidents" | "monitoring" | "settings";
+  | "overview" | "projects" | "runs" | "deployments" | "external" | "packs"
+  | "incidents" | "monitoring" | "hedera" | "bazantic" | "mcp" | "settings";
 
 const NAV_GROUPS: { label?: string; items: { key: SectionKey; label: string; icon: typeof LayoutGrid }[] }[] = [
-  { items: [{ key: "overview", label: "Overview", icon: LayoutGrid }] },
-  { label: "Build", items: [{ key: "build", label: "Build", icon: FileCode2 }, { key: "projects", label: "Projects", icon: FolderGit2 }] },
-  { label: "Verify", items: [{ key: "verify", label: "Verify", icon: ShieldCheck }, { key: "runs", label: "Verification Runs", icon: ShieldCheck }, { key: "packs", label: "Integrity Packs", icon: Boxes }] },
-  { label: "Deploy", items: [{ key: "deploy", label: "Deploy", icon: Rocket }, { key: "gate", label: "Deployment Gate", icon: ShieldCheck }, { key: "deployments", label: "Deployments", icon: Rocket }] },
+  { items: [{ key: "overview", label: "New Run", icon: LayoutGrid }] },
+  { label: "Build", items: [{ key: "projects", label: "Projects", icon: FolderGit2 }] },
+  { label: "Verify", items: [{ key: "runs", label: "Verification Runs", icon: ShieldCheck }, { key: "packs", label: "Integrity Packs", icon: Boxes }] },
+  { label: "Deploy", items: [{ key: "deployments", label: "Deployments", icon: Rocket }] },
   { label: "Audit", items: [{ key: "external", label: "External Audit", icon: FileSearch }] },
-  { label: "Operations", items: [{ key: "monitoring", label: "Monitoring", icon: Activity }, { key: "incidents", label: "Incidents", icon: AlertTriangle }] },
+  { label: "Operations", items: [{ key: "incidents", label: "Incidents", icon: AlertTriangle }, { key: "monitoring", label: "Monitoring", icon: Activity }] },
+  { label: "Integrations", items: [{ key: "hedera", label: "Hedera Payments", icon: Hexagon }, { key: "bazantic", label: "Bazantic Recipes", icon: Boxes }, { key: "mcp", label: "MCP & API", icon: Plug }] },
   { label: "Settings", items: [{ key: "settings", label: "Settings", icon: Settings }] },
-];
-
-const ECO = [
-  { name: "The Graph", icon: Network }, { name: "Hedera", icon: Hexagon },
-  { name: "Bazantic", icon: Boxes }, { name: "MCP", icon: Plug }, { name: "Substreams", icon: Layers },
 ];
 
 export default function Dashboard() {
@@ -77,9 +73,9 @@ export default function Dashboard() {
           <div className="top__spacer" />
           <span className="top__env"><span className="dot" /> Production</span>
           <div className="top__actions">
-            <Button onClick={() => go("build")}>New Build</Button>
+            <Button onClick={() => go("overview")}>New Run</Button>
             <Button variant="secondary" onClick={() => go("external")}>Run Audit</Button>
-            <Button variant="secondary" onClick={() => go("gate")}>Deployment Gate</Button>
+            <Button variant="secondary" onClick={() => go("deployments")}>Deployments</Button>
             <ThemeToggle />
             <span className="top__avatar" title="Account">JD</span>
           </div>
@@ -87,23 +83,17 @@ export default function Dashboard() {
 
         <main className="dash-main">
           {active === "overview" && <Overview onNavigate={(k) => go(k as SectionKey)} />}
-          {active === "verify" && <ExternalAudit mode="verify" />}
           {active === "external" && <ExternalAudit mode="audit" />}
           {active === "packs" && <Packs />}
-          {active === "build" && <Projects onNavigate={go} />}
-          {active === "projects" && <ProjectList onBuild={() => go("build")} />}
+          {active === "projects" && <Projects onNavigate={go} />}
           {active === "runs" && <Runs />}
-          {(active === "deploy" || active === "gate" || active === "deployments") && <Deployments mode={active === "gate" ? "gate" : active === "deployments" ? "history" : "deploy"} />}
+          {active === "deployments" && <Deployments mode="history" />}
           {active === "incidents" && <Incidents />}
           {active === "monitoring" && <Monitoring />}
+          {active === "hedera" && <IntegrationPage kind="hedera" />}
+          {active === "bazantic" && <IntegrationPage kind="bazantic" />}
+          {active === "mcp" && <IntegrationPage kind="mcp" />}
           {active === "settings" && <EmptyState icon={Settings} title="Settings" body="Workspace, RPC endpoints, integrity-pack policy, and deployment-gate rules will be configured here." />}
-
-          {active === "overview" && (
-            <div className="dash-eco">
-              <b>Integrations</b>
-              {ECO.map((e) => <span key={e.name}><e.icon size={16} /> {e.name}</span>)}
-            </div>
-          )}
         </main>
       </div>
     </div>

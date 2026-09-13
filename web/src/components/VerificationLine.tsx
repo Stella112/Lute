@@ -51,7 +51,7 @@ export function VerificationLine({ stages, animate = true }: { stages: Verificat
             <span className="vl-node__body">
               <span className="vl-node__label">{s.label}</span>
               <span className={`vl-node__state ${stateClass(s.state)}`}>
-                {s.state === "PASSED" ? "Completed" : s.state === "RUNNING" ? "Running" : s.state === "BLOCKED" ? "Blocked" : s.state === "FAILED" ? "Failed" : "Waiting"}
+                {s.state === "PASSED" ? "Completed" : s.state === "RUNNING" ? "Running" : s.state === "BLOCKED" ? "Blocked" : s.state === "FAILED" ? "Failed" : s.state === "SKIPPED" ? "Skipped" : "Waiting"}
                 {s.timing ? ` · ${s.timing}` : ""}
               </span>
               {s.detail && <span className="vl-node__detail">{s.detail}</span>}
