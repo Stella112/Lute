@@ -243,11 +243,23 @@ export default function Docs() {
               </DocSection>
 
               <DocSection id="mcp" eyebrow="For AI clients" title="Using Lute as an MCP server">
-                <p>MCP lets an AI assistant discover Lute’s capabilities as tools. The assistant can build a candidate, run verification, diagnose a failure, check the deployment gate, and monitor a target through one consistent interface.</p>
+                <p>MCP lets an AI assistant discover Lute’s capabilities as tools. It is a connection method, not a separate copy of Lute and not something a normal dashboard user needs to download.</p>
+                <div className="docs-mcp-choices">
+                  <InfoCard icon={ShieldCheck} title="1. Use the dashboard"><p>For a normal user or judge, open <a className="docs-inline-link" href="/app">uselute.xyz/app</a>. The website talks to Lute’s API directly. There is no MCP setup and no local process to keep running.</p></InfoCard>
+                  <InfoCard icon={Bot} title="2. Use the hosted MCP link"><p>An AI client connects to Bazantic’s hosted endpoint and discovers Lute’s tools remotely. Nothing is installed on the user’s computer.</p><a className="docs-inline-link" href="https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp" target="_blank" rel="noreferrer">Open the Lute MCP endpoint <ExternalLink size={13} /></a></InfoCard>
+                  <InfoCard icon={Terminal} title="3. Run MCP locally"><p>Developers can clone Lute, run <code>npm install</code>, then <code>npm run mcp</code>. Dependencies download once to that computer; the local MCP stops when that computer is shut down.</p></InfoCard>
+                </div>
+                <div className="docs-mcp-integration">
+                  <div className="docs-mcp-integration__title"><Network size={16} /> How the hosted link is integrated</div>
+                  <div className="docs-mcp-integration__flow"><span>AI client</span><ArrowRight size={16} /><span>Bazantic MCP gateway</span><ArrowRight size={16} /><span>Lute API on Qevor</span><ArrowRight size={16} /><span>same verifier</span></div>
+                  <p>Bazantic reads Lute’s public API description, <a className="docs-inline-link" href="/openapi.json">openapi.json</a>, turns the API operations into MCP tools, and forwards calls to <b>uselute.xyz</b>. The dashboard and MCP therefore reach the same verification engine and produce the same evidence-backed result.</p>
+                  <p className="docs-mcp-note">Lute audit MCP: <a href="https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp" target="_blank" rel="noreferrer">hosted endpoint</a> · Graph provider adapter: <a href="https://ssr3i3ifazfv3llppiubwpuxqe.bazgateway.com/mcp" target="_blank" rel="noreferrer">hosted endpoint</a> · Verify Before Trust Recipe: <code>verify-before-trust-graph-lute</code></p>
+                </div>
+                <p>The assistant can then follow the same safe sequence as a human operator:</p>
                 <div className="docs-mcp-flow"><span>lute_build</span><ArrowRight size={16} /><span>lute_verify</span><ArrowRight size={16} /><span>lute_repair</span><ArrowRight size={16} /><span>lute_deployment_gate</span><ArrowRight size={16} /><span>lute_deploy</span></div>
                 <div className="docs-mcp-grid">
-                  <div className="docs-code-card"><div className="docs-code-card__title"><Terminal size={16} /> Run locally</div><pre>{"npm install\nnpm run mcp"}</pre><p>The local server uses stdio, so it keeps running wherever your MCP client runs. It does not depend on your laptop staying on when the client is not using it.</p></div>
-                  <div className="docs-code-card"><div className="docs-code-card__title"><Bot size={16} /> Use a published gateway</div><p>A remote MCP gateway lets judges, teammates, and other agents discover Lute without cloning the repository. Discovery is separate from paid execution when the gateway is configured for x402.</p><LinkArrow href="/openapi.json" external>View the public API description</LinkArrow></div>
+                  <div className="docs-code-card"><div className="docs-code-card__title"><Terminal size={16} /> Local MCP is for builders</div><pre>{"npm install\nnpm run mcp"}</pre><p>The local server uses stdio and exposes the complete workflow. It runs wherever the MCP client runs, so it is optional for people using the hosted dashboard.</p></div>
+                  <div className="docs-code-card"><div className="docs-code-card__title"><Bot size={16} /> Hosted MCP is for agents</div><p>Remote agents can discover Lute without cloning the repository. Discovery is separate from paid execution when the gateway is configured for x402; a caller uses its own account or approved credit.</p><LinkArrow href="/openapi.json" external>View the public API description</LinkArrow></div>
                 </div>
                 <div className="docs-callout docs-callout--blue"><LockKeyhole size={20} /><div><b>Credential safety</b><span>MCP tools follow the same guardrails as the dashboard: deploy is gated, uncertain verification is not promoted to a pass, and private keys should stay in the server or wallet that owns them.</span></div></div>
               </DocSection>
@@ -270,4 +282,3 @@ export default function Docs() {
     </>
   );
 }
-
