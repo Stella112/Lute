@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Boxes, CheckCircle2, FileCode2, Loader2, Play, ShieldCheck, Wrench } from "lucide-react";
 import { Badge, Button, StatusBadge } from "../../components/ui";
-import { buildProject, runVerification } from "../../lib/api";
+import { buildProject, listWorkflowBuilds, runVerification } from "../../lib/api";
 import type { WorkflowBuild, WorkflowVerification } from "../../lib/types";
 
 type State = "idle" | "running" | "done" | "error";
@@ -22,6 +22,18 @@ export function Projects() {
   const [toBlock, setToBlock] = useState("51125000");
   const [subgraph, setSubgraph] = useState("morpho");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    listWorkflowBuilds().then(({ builds }) => {
+      const latest = builds[0];
+      if (!latest) return;
+      setBuild(latest);
+      setBuildState("done");
+      setContract(latest.result.contract);
+      setStartBlock(latest.result.startBlock);
+      setIntent(`Build an ERC-4626 indexer on Base for ${latest.result.contract}`);
+    }).catch(() => { /* an empty build history is a valid first-run state */ });
+  }, []);
 
   const buildCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
