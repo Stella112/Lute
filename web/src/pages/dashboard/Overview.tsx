@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Boxes, AlertTriangle, ShieldCheck, Clock, TrendingUp, Rocket, FileText, Copy, Check,
-  Package, ScrollText, BadgeCheck, ArrowRight, Fingerprint, Activity,
+  Package, ScrollText, BadgeCheck, ArrowRight, Fingerprint, Activity, FileCode2,
 } from "lucide-react";
-import { Badge, StatusBadge } from "../../components/ui";
-import { getDashboard } from "../../lib/api";
-import type { DashboardSnapshot, DeploymentGateSnapshot, VerificationRun } from "../../lib/types";
+import { Badge, Button, StatusBadge } from "../../components/ui";
+import { getDashboard, listWorkflowBuilds } from "../../lib/api";
+import type { DashboardSnapshot, DeploymentGateSnapshot, VerificationRun, WorkflowBuild } from "../../lib/types";
 
 const STAT_ICON: Record<string, typeof Boxes> = {
   verified: Boxes, failed: AlertTriangle, checks: ShieldCheck, last: Clock,
@@ -46,17 +46,25 @@ function gateTone(gate: DeploymentGateSnapshot | null): "success" | "danger" | "
   return "danger";
 }
 
+function shortHash(value: string | null | undefined): string {
+  if (!value) return "Not created";
+  return value.length > 22 ? `${value.slice(0, 18)}…${value.slice(-4)}` : value;
+}
+
 export function Overview({ onNavigate }: { onNavigate: (section: string) => void }) {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [builds, setBuilds] = useState<WorkflowBuild[]>([]);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     getDashboard().then(setSnapshot).catch((err: Error) => setError(err.message));
+    listWorkflowBuilds().then(({ builds: storedBuilds }) => setBuilds(storedBuilds)).catch(() => { /* build history may be empty */ });
   }, []);
 
   const latest = snapshot?.latest ?? null;
   const gate = snapshot?.gate ?? null;
+  const latestBuild = builds[0] ?? null;
   const manifest = useMemo(() => manifestFor(latest), [latest]);
   const stats = snapshot ? [
     { key: "verified", label: "Verified Runs", value: String(snapshot.stats.verifiedRuns), delta: `${snapshot.stats.totalRuns} total runs`, tone: snapshot.stats.verifiedRuns ? "up" : "muted" },
@@ -89,14 +97,31 @@ export function Overview({ onNavigate }: { onNavigate: (section: string) => void
 
   const divergence = latest?.report.firstDivergence ?? null;
   const failedRuns = snapshot.runs.filter((run) => run.verdict === "FAILED");
+  const hasCandidate = Boolean(latestBuild || latest?.candidateHash || gate?.candidateHash);
+  const candidateHash = latest?.candidateHash || gate?.candidateHash || latestBuild?.result.candidate.candidateHash || null;
+  const deployStatus = latest?.verdict === "FAILED" || latest?.verdict === "INCONCLUSIVE" ? "Blocked" : gate?.allowed ? "Ready" : hasCandidate ? "Waiting" : "Waiting";
 
   return (
     <>
       <div className="demo-notice" role="status"><strong>Live dashboard data</strong><span>Runs, verdicts, evidence, and integrity packs are read from this Lute instance.</span></div>
       <div className="dash-head">
         <div><h1>Overview</h1><p>Your live trust and verification control center for Graph infrastructure.</p></div>
-        <div className="dash-head__tag">Trusted data. Stronger networks.<br />Build. Verify. Repair. Deploy.</div>
+        <div className="dash-head__tag">Trusted data. Stronger networks.<br />Build. Verify. Deploy.</div>
       </div>
+
+      <section className="panel lifecycle" aria-label="Lute build verify deploy lifecycle">
+        <div className="panel__h"><h2><Rocket size={18} /> Project lifecycle</h2><span className="lifecycle__project">Project: <b>steak-honest</b></span></div>
+        <div className="lifecycle__flow">
+          <div className={`lifecycle__step ${hasCandidate ? "is-complete" : "is-current"}`}><span className="lifecycle__step-title"><FileCode2 size={16} /> BUILD</span><strong>{hasCandidate ? "Completed" : "Ready"}</strong><small>{hasCandidate ? "Candidate created" : "Start a new candidate"}</small></div>
+          <ArrowRight className="lifecycle__arrow" size={20} />
+          <div className={`lifecycle__step ${latest?.verdict === "FAILED" || latest?.verdict === "INCONCLUSIVE" ? "is-blocked" : latest?.verdict === "VERIFIED" ? "is-complete" : "is-current"}`}><span className="lifecycle__step-title"><ShieldCheck size={16} /> VERIFY</span><strong>{latest?.verdict === "FAILED" ? "Failed" : latest?.verdict === "INCONCLUSIVE" ? "Inconclusive" : latest?.verdict === "VERIFIED" ? "Verified" : "Waiting"}</strong><small>{latest ? `${latest.report.eventsChecked} events checked` : "Run the verifier"}</small></div>
+          <ArrowRight className="lifecycle__arrow" size={20} />
+          <div className={`lifecycle__step ${deployStatus === "Blocked" ? "is-blocked" : deployStatus === "Ready" ? "is-complete" : "is-current"}`}><span className="lifecycle__step-title"><Rocket size={16} /> DEPLOY</span><strong>{deployStatus}</strong><small>{deployStatus === "Ready" ? "Verified candidate" : "Requires verification"}</small></div>
+        </div>
+        {latest?.verdict === "FAILED" && <div className="lifecycle__blocked"><AlertTriangle size={18} /><div className="lifecycle__blocked-main"><strong>Deployment Blocked</strong><small>{divergence ? `First divergence: block ${divergence.blockNumber}, tx ${shortHash(divergence.transactionHash)}, log ${divergence.logIndex}.` : "The candidate disagrees with canonical chain evidence."}</small></div><Button variant="secondary" onClick={() => onNavigate("runs")}>Repair Candidate</Button></div>}
+        <div className="lifecycle__details"><div><span>Candidate</span><b className="mono">{shortHash(candidateHash)}</b></div><div><span>Integrity Pack</span><b>{latest ? `${latest.integrityPack.id}@${latest.integrityPack.version}` : snapshot.packs[0] ? `${snapshot.packs[0].id}@${snapshot.packs[0].version}` : "erc4626@1"}</b></div><div><span>Evidence</span><b>{latest ? `${latest.report.eventsChecked} events checked` : "Not checked yet"}</b></div><div><span>Strong checks</span><b>{latest ? `${latest.coverage.strongChecksPassed}/${latest.coverage.strongChecksTotal} passed` : "Waiting"}</b></div></div>
+        <div className="lifecycle__actions"><Button variant="secondary" onClick={() => onNavigate("build")}>{hasCandidate ? "View Build" : "New Build"}</Button>{latest?.verdict === "FAILED" ? <Button variant="secondary" onClick={() => onNavigate("runs")}>Repair Candidate</Button> : gate?.allowed ? <Button onClick={() => onNavigate("deploy")}>Deploy Verified Candidate</Button> : <Button onClick={() => onNavigate(hasCandidate ? "verify" : "build")}>{hasCandidate ? "Verify Candidate" : "Start Build"}</Button>}{latest && <Button variant="ghost" onClick={() => onNavigate("runs")}>View Evidence <ArrowRight size={14} /></Button>}</div>
+      </section>
 
       <div className="stats">
         {stats.map((s) => {

@@ -20,7 +20,7 @@ export function Logo({ withTagline = true, size = 30 }: { withTagline?: boolean;
       <LogoMark size={size} />
       <span className="logo__text">
         <span className="logo__word">Lute</span>
-        {withTagline && <span className="logo__tag">Build Trusted AI</span>}
+        {withTagline && <span className="logo__tag">BUILD. VERIFY. DEPLOY.</span>}
       </span>
     </span>
   );

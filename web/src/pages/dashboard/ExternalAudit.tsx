@@ -12,7 +12,8 @@ const VERDICT_SAY: Record<string, string> = {
   INCONCLUSIVE: "The comparison could not be completed reliably (a data source was unavailable, or the range is too near the head).",
 };
 
-export function ExternalAudit() {
+export function ExternalAudit({ mode = "audit" }: { mode?: "verify" | "audit" } = {}) {
+  const isVerify = mode === "verify";
   const [contract, setContract] = useState("0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183");
   const [event, setEvent] = useState<"Deposit" | "Withdraw">("Deposit");
   const [fromBlock, setFromBlock] = useState("51115000");
@@ -38,13 +39,13 @@ export function ExternalAudit() {
     <>
       <div className="dash-head">
         <div>
-          <h1>External Audit</h1>
-          <p>Independently verify existing Graph infrastructure against canonical chain evidence — even when Lute didn't build it.</p>
+          <h1>{isVerify ? "Verify" : "External Audit"}</h1>
+          <p>{isVerify ? "Run the same independent chain-versus-index verifier against the current candidate before it can reach Deploy." : "Independently verify existing Graph infrastructure against canonical chain evidence — even when Lute didn't build it."}</p>
         </div>
       </div>
 
       <div className="panel" style={{ marginBottom: "var(--sp-4)" }}>
-        <div className="panel__h"><h2><FileSearch size={18} /> Audit target</h2><Badge tone="accent">Integrity Pack · erc4626@1</Badge></div>
+        <div className="panel__h"><h2><FileSearch size={18} /> {isVerify ? "Verification target" : "Audit target"}</h2><Badge tone="accent">Integrity Pack · erc4626@1</Badge></div>
         <form className="audit-form" onSubmit={submit}>
           <div className="field full">
             <label>Vault contract (Base, ERC-4626)</label>
