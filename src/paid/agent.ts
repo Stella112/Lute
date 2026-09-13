@@ -60,7 +60,15 @@ async function main() {
   // actual key type. The facilitator verifies this signature against Mirror Node.
   const agentPrivateKey = PrivateKey.fromString(agent.key);
   const signer = createClientHederaSigner(agent.id, agentPrivateKey, { network: "hedera:testnet" });
-  const paymentClient = new x402Client().register("hedera:testnet", new ExactHederaScheme(signer));
+  const paymentClient = new x402Client()
+    .register("hedera:testnet", new ExactHederaScheme(signer))
+    // HBAR is intentionally not a default asset in the generic SDK because it
+    // cannot be USD-priced automatically. Opt in explicitly and cap this demo
+    // client at the service's maximum 2 HBAR quote.
+    .setSpendControls({
+      maxAmountPerPayment: false,
+      allowedAssets: [{ network: "hedera:testnet", asset: "0.0.0", maxAmountPerPayment: "200000000" }],
+    });
   const paidFetch = wrapFetchWithPayment(globalThis.fetch, paymentClient);
   const url = `${PAID_URL}/v1/paid/audits`;
   const body = JSON.stringify({ contract: "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183", event: "Deposit", fromBlock: 51115000, toBlock: 51125000, subgraph: "morpho" });
