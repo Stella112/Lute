@@ -40,8 +40,8 @@ flowchart LR
 The verifier reconstructs the left path from raw logs and only ever *compares* the right
 path — so a bug in the candidate's mapping cannot hide in the expected values.
 
-Surfaces over the same engine: a **CLI**, an **MCP server** (`lute_audit`), a **watchlist
-runner**, a **dashboard**, and a deterministic **plain-English** explainer.
+Surfaces over the same engine: a **CLI**, a full **MCP server**, a **watchlist runner**, a
+**dashboard**, and a deterministic **plain-English** explainer.
 
 ---
 
@@ -465,3 +465,27 @@ The command runs codegen, build, create, and deploy only after the candidate has
 verified hash, verdict, source completeness, freshness, and revocation checks allow it.
 It writes a local ignored receipt under `.lute/deployments/`. Graph Studio publishing
 remains an operator action using the Studio deploy key; never commit that key.
+
+## Unified dashboard and MCP control plane
+
+The live dashboard's **Build & Ship** page is the operator path for the complete product
+workflow:
+
+1. **Build candidate** creates a fresh reviewed-template candidate and records its exact
+   candidate hash. Compilation is optional and off by default.
+2. **Verify and save run** runs the unchanged verifier and persists the `VerificationRun`
+   with its evidence root. External Audit now uses this same persisted path.
+3. **Repair** appears on a failed run. Diagnose is read-only; applying the narrow known fix
+   is an explicit action and marks re-verification as required.
+4. **Deployment Gate** recalculates the candidate hash. **Preview Graph deploy** shows the
+   exact codegen/build/create/deploy commands without executing them. Only an explicitly
+   authorized operator can execute the external deploy.
+
+The same control plane is available from the local stdio MCP server. In addition to
+`lute_audit`, `lute_supported_events`, and `lute_explain`, the server exposes:
+`lute_build`, `lute_builds`, `lute_verify`, `lute_repair`, `lute_deployment_gate`,
+`lute_integrity_pack`, `lute_monitor`, and `lute_deploy`. Build ids are opaque; callers cannot provide
+arbitrary filesystem paths. `lute_deploy` defaults to a dry-run and never accepts a private
+key. The public Bazantic gateway must be refreshed from [`bazantic/openapi.json`](bazantic/openapi.json)
+before it exposes these newly added workflow HTTP operations; the live dashboard and local
+MCP server expose them immediately.

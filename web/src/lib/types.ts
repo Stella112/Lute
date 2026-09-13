@@ -154,4 +154,71 @@ export type VerificationRun = {
   verdict: Verdict;
   createdAt: string;
   revoked: boolean;
+  payment?: {
+    protocol: string;
+    facilitator: string;
+    network: string;
+    transaction?: string;
+    payer?: string;
+    payTo?: string;
+    feePayer?: string;
+    amount?: string;
+    asset?: string;
+    tier?: string;
+  };
+};
+
+export type CandidateManifest = VerificationRun["candidate"] & { root: string };
+export type BuildStage = { name: "intent" | "scaffold" | "validate" | "dependencies" | "compile"; status: "PASSED" | "SKIPPED" | "FAILED"; detail: string };
+export type WorkflowBuild = {
+  schemaVersion: 1;
+  buildId: string;
+  createdAt: string;
+  result: {
+    schemaVersion: 1;
+    workflow: "BUILD";
+    network: "base";
+    standard: "ERC-4626";
+    contract: string;
+    startBlock: string;
+    candidateDir: string;
+    candidate: CandidateManifest;
+    stages: BuildStage[];
+  };
+};
+
+export type WorkflowVerification = { run: VerificationRun; file: string; candidateRef: string };
+export type WorkflowGate = {
+  candidate: CandidateManifest;
+  verifiedRun: VerificationRun;
+  gate: { state: DeploymentState; allowed: boolean; reasons: string[] };
+  candidateRef: string;
+};
+export type RepairContext = {
+  schemaVersion: 1;
+  workflow: "REPAIR";
+  runId: string;
+  candidateHash: string;
+  pack: { id: string; version: string };
+  failedChecks: string[];
+  firstDivergence: AuditReport["firstDivergence"];
+  canonicalObservation: Record<string, string> | null;
+  indexedObservation: Record<string, string> | null;
+  evidenceIds: string[];
+  relevantFiles: string[];
+  limitations: string[];
+  recommendedActions: string[];
+};
+export type WorkflowRepair = { context: RepairContext; candidate?: CandidateManifest; applied: { changed: boolean; file: string } | null; reverifyRequired: boolean };
+export type DeploymentCommand = { purpose: "codegen" | "build" | "create" | "deploy"; command: string; args: string[]; allowAlreadyExists?: boolean };
+export type WorkflowDeployment = {
+  schemaVersion: 1;
+  dryRun: boolean;
+  candidate: CandidateManifest;
+  verificationRunId: string;
+  gate: { state: DeploymentState; allowed: boolean; reasons: string[] };
+  candidateRef: string;
+  plan: DeploymentCommand[];
+  receipt?: { deployedAt: string; name: string; node: string; ipfs: string; versionLabel: string; candidateHash: string; verificationRunId: string; file: string };
+  results?: Array<DeploymentCommand & { stdout: string; stderr: string; skipped?: boolean }>;
 };

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { FileSearch, Loader2, Play, GitBranch, AlertTriangle } from "lucide-react";
 import { Button, Badge, StatusBadge } from "../../components/ui";
-import { runAudit } from "../../lib/api";
-import type { AuditReport } from "../../lib/types";
+import { runVerification } from "../../lib/api";
+import type { AuditReport, WorkflowVerification } from "../../lib/types";
 
 type Status = "idle" | "running" | "done" | "error";
 
@@ -20,14 +20,15 @@ export function ExternalAudit() {
   const [subgraph, setSubgraph] = useState("morpho");
   const [status, setStatus] = useState<Status>("idle");
   const [report, setReport] = useState<AuditReport | null>(null);
+  const [verification, setVerification] = useState<WorkflowVerification | null>(null);
   const [error, setError] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("running"); setError(""); setReport(null);
     try {
-      const r = await runAudit({ contract: contract.trim(), event, fromBlock: fromBlock.trim(), toBlock: toBlock.trim(), subgraph });
-      setReport(r); setStatus("done");
+      const r = await runVerification({ contract: contract.trim(), event, fromBlock: fromBlock.trim(), toBlock: toBlock.trim(), subgraph, candidateRef: "current" });
+      setVerification(r); setReport(r.run.report); setStatus("done");
     } catch (err) {
       setError((err as Error).message); setStatus("error");
     }
@@ -93,7 +94,7 @@ export function ExternalAudit() {
         </div></div>
       )}
 
-      {status === "done" && report && <AuditResult report={report} />}
+      {status === "done" && report && <><div className="panel" style={{ marginBottom: "var(--sp-4)" }}><div className="kvrow"><span>Persisted VerificationRun</span><span className="mono">{verification?.run.runId}</span></div><div className="kvrow"><span>Candidate hash</span><span className="mono">{verification?.run.candidateHash}</span></div><p className="hint">This result is saved in Verification Runs and is now eligible for repair/gate evaluation.</p></div><AuditResult report={report} /></>}
     </>
   );
 }

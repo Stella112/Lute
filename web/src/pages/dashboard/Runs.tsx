@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
-import { Badge, StatusBadge } from "../../components/ui";
-import { getDashboard } from "../../lib/api";
-import type { DashboardSnapshot, VerificationRun } from "../../lib/types";
+import { AlertTriangle, Loader2, ShieldCheck, Wrench } from "lucide-react";
+import { Badge, Button, StatusBadge } from "../../components/ui";
+import { getDashboard, getRepairContext } from "../../lib/api";
+import type { DashboardSnapshot, VerificationRun, WorkflowRepair } from "../../lib/types";
 
 function age(iso: string): string {
   const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 60_000));
@@ -41,5 +41,17 @@ export function Runs() {
 
 function RunDetail({ run }: { run: VerificationRun }) {
   const divergence = run.report.firstDivergence;
-  return <div className="panel"><div className="panel__h"><h2><ShieldCheck size={18} /> Run details</h2><StatusBadge status={run.verdict} /></div><div className="kvrow"><span>Run id</span><span className="mono">{run.runId}</span></div><div className="kvrow"><span>Candidate hash</span><span className="mono">{run.candidateHash}</span></div><div className="kvrow"><span>Evidence root</span><span className="mono">{run.evidenceRoot}</span></div><div className="kvrow"><span>Range</span><span className="mono">{run.coverage.blocksChecked}</span></div><div className="kvrow"><span>Sources complete</span><span>{run.coverage.sourcesComplete ? <Badge tone="success">Yes</Badge> : <Badge tone="warning">No</Badge>}</span></div>{divergence && <div className="panel" style={{ marginTop: "var(--sp-4)" }}><div className="panel__h"><h2><AlertTriangle size={18} /> First divergence</h2><Badge tone="danger">{divergence.check}</Badge></div><div className="kvrow"><span>Block / log</span><span className="mono">{divergence.blockNumber} / {divergence.logIndex}</span></div><div className="kvrow"><span>Transaction</span><span className="mono">{divergence.transactionHash}</span></div></div>}</div>;
+  const [repair, setRepair] = useState<WorkflowRepair | null>(null);
+  const [repairing, setRepairing] = useState(false);
+  const [repairError, setRepairError] = useState("");
+  const inspectRepair = async () => {
+    setRepairing(true); setRepairError("");
+    try { setRepair(await getRepairContext(run.runId)); } catch (err) { setRepairError((err as Error).message); } finally { setRepairing(false); }
+  };
+  const applyRepair = async () => {
+    if (!window.confirm("Apply Lute's known ERC-4626 identity repair to the configured candidate? You must re-verify afterward.")) return;
+    setRepairing(true); setRepairError("");
+    try { setRepair(await getRepairContext(run.runId, "current", true)); } catch (err) { setRepairError((err as Error).message); } finally { setRepairing(false); }
+  };
+  return <div className="panel"><div className="panel__h"><h2><ShieldCheck size={18} /> Run details</h2><StatusBadge status={run.verdict} /></div><div className="kvrow"><span>Run id</span><span className="mono">{run.runId}</span></div><div className="kvrow"><span>Candidate hash</span><span className="mono">{run.candidateHash}</span></div><div className="kvrow"><span>Evidence root</span><span className="mono">{run.evidenceRoot}</span></div><div className="kvrow"><span>Range</span><span className="mono">{run.coverage.blocksChecked}</span></div><div className="kvrow"><span>Sources complete</span><span>{run.coverage.sourcesComplete ? <Badge tone="success">Yes</Badge> : <Badge tone="warning">No</Badge>}</span></div>{divergence && <div className="panel" style={{ marginTop: "var(--sp-4)" }}><div className="panel__h"><h2><AlertTriangle size={18} /> First divergence</h2><Badge tone="danger">{divergence.check}</Badge></div><div className="kvrow"><span>Block / log</span><span className="mono">{divergence.blockNumber} / {divergence.logIndex}</span></div><div className="kvrow"><span>Transaction</span><span className="mono">{divergence.transactionHash}</span></div></div>}{run.verdict === "FAILED" && <div style={{ marginTop: "var(--sp-4)" }}><div style={{ display: "flex", gap: "var(--sp-3)", flexWrap: "wrap" }}><Button variant="secondary" onClick={inspectRepair} disabled={repairing}>{repairing ? <><Loader2 size={15} className="spin" /> Working…</> : <><Wrench size={15} /> Diagnose repair</>}</Button>{repair && <Button onClick={applyRepair} disabled={repairing}>Apply known fix</Button>}</div>{repairError && <p className="hint" style={{ color: "var(--danger)" }}>{repairError}</p>}{repair && <div className="dcode" style={{ marginTop: "var(--sp-3)" }}><div>failed checks: {repair.context.failedChecks.join(", ") || "none"}</div><div>reverify required: {repair.reverifyRequired ? "yes" : "no"}</div>{repair.applied && <div>changed: {repair.applied.file}</div>}</div>}</div>}</div>;
 }

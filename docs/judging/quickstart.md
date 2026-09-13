@@ -12,6 +12,11 @@ Open the live dashboard:
 Run the example Base ERC-4626 audit and inspect the verdict, event counts, checks,
 first-divergence evidence, and provenance.
 
+For the complete operator workflow, select **Build & Ship** in the left navigation. Build
+creates a hashed candidate, Verify saves a new evidence-bound run, failed runs expose
+diagnostic/explicit repair actions, and Deployments shows a fail-closed gate plus a dry-run
+Graph deployment plan. Actual deployment remains a separately authorized operator action.
+
 ## 2. Call the public REST API
 
 The public OpenAPI document is:
@@ -82,6 +87,12 @@ MCP tool discovery is free. Audit execution through the gateway is pay-per-reque
 so a judge who wants to run a paid gateway call must use their own Bazantic account,
 wallet, or approved test credit. The owner's payment grant is device-specific and
 must not be shared.
+
+For a local MCP client, run `npm run mcp`. The local server exposes the complete workflow:
+`lute_build`, `lute_builds`, `lute_verify`, `lute_repair`, `lute_deployment_gate`,
+`lute_integrity_pack`, `lute_monitor`, and `lute_deploy`, alongside the original audit/explain tools.
+Build and verify return opaque ids and deterministic hashes; repair mutation requires an
+explicit flag; deploy defaults to a plan-only dry-run.
 
 MCP-capable clients should use the gateway URL directly. The client handles the
 MCP protocol handshake; raw protocol checks require the `Mcp-Protocol-Version`

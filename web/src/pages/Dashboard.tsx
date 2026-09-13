@@ -14,6 +14,7 @@ import { Runs } from "./dashboard/Runs";
 import { Monitoring } from "./dashboard/Monitoring";
 import { Deployments } from "./dashboard/Deployments";
 import { Incidents } from "./dashboard/Incidents";
+import { Projects } from "./dashboard/Projects";
 
 type SectionKey =
   | "overview" | "projects" | "runs" | "packs" | "deployments"
@@ -21,7 +22,7 @@ type SectionKey =
 
 const NAV: { key: SectionKey; label: string; icon: typeof LayoutGrid }[] = [
   { key: "overview", label: "Overview", icon: LayoutGrid },
-  { key: "projects", label: "Projects", icon: FolderGit2 },
+  { key: "projects", label: "Build & Ship", icon: FolderGit2 },
   { key: "runs", label: "Verification Runs", icon: ShieldCheck },
   { key: "packs", label: "Integrity Packs", icon: Boxes },
   { key: "deployments", label: "Deployments", icon: Rocket },
@@ -69,7 +70,7 @@ export default function Dashboard() {
       <div>
         <header className="top">
           <button className="top__menu" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu size={18} /></button>
-          <button className="top__proj"><span><small>Project</small>edge-market-subgraph</span></button>
+          <button className="top__proj"><span><small>Project</small>lute / steak-honest</span></button>
           <div className="top__search"><Search size={15} /> Search projects, runs, deployments… <kbd>⌘K</kbd></div>
           <div className="top__spacer" />
           <span className="top__env"><span className="dot" /> Production</span>
@@ -85,7 +86,7 @@ export default function Dashboard() {
           {active === "overview" && <Overview onNavigate={(k) => go(k as SectionKey)} />}
           {active === "external" && <ExternalAudit />}
           {active === "packs" && <Packs />}
-          {active === "projects" && <EmptyState icon={FolderGit2} title="Projects" body="Connect a Graph deployment to start tracking verification runs, deployments, and integrity over time." />}
+          {active === "projects" && <Projects />}
           {active === "runs" && <Runs />}
           {active === "deployments" && <Deployments />}
           {active === "incidents" && <Incidents />}

@@ -7,6 +7,7 @@
 
 import type {
   AuditReport, DashboardSnapshot, DeploymentGate, Incident, IntegrityIncident, IntegrityPack, MonitorRow, MonitoringRun, VerificationRunRow, VerificationStage,
+  WorkflowBuild, WorkflowVerification, WorkflowRepair, WorkflowDeployment, WorkflowGate,
 } from "./types";
 
 export type RunAuditParams = {
@@ -34,6 +35,56 @@ async function getJSON<T>(path: string): Promise<T> {
   const body = await res.json();
   if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
   return body as T;
+}
+
+async function postJSON<T>(path: string, value: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(value),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body?.error ?? `request failed (${res.status})`);
+  return body as T;
+}
+
+export function buildProject(input: { intent: string; contract?: string; startBlock: string; compile: boolean }): Promise<WorkflowBuild> {
+  return postJSON<WorkflowBuild>("/v1/workflows/build", input);
+}
+
+export function listWorkflowBuilds(): Promise<{ builds: WorkflowBuild[] }> {
+  return getJSON<{ builds: WorkflowBuild[] }>("/v1/workflows/builds");
+}
+
+export function runVerification(input: {
+  contract: string;
+  event: "Deposit" | "Withdraw";
+  fromBlock: string;
+  toBlock: string;
+  subgraph: string;
+  candidateRef?: string;
+}): Promise<WorkflowVerification> {
+  return postJSON<WorkflowVerification>("/v1/workflows/verify", input);
+}
+
+export function getRepairContext(runId: string, candidateRef = "current", applyKnownFix = false): Promise<WorkflowRepair> {
+  return postJSON<WorkflowRepair>("/v1/workflows/repair", { runId, candidateRef, applyKnownFix });
+}
+
+export function evaluateGate(runId: string, candidateRef = "current"): Promise<WorkflowGate> {
+  return postJSON<WorkflowGate>("/v1/workflows/gate", { runId, candidateRef });
+}
+
+export function previewDeployment(runId: string, candidateRef = "current"): Promise<WorkflowDeployment> {
+  return postJSON<WorkflowDeployment>("/v1/workflows/deploy", { runId, candidateRef, dryRun: true });
+}
+
+export function deployVerified(runId: string, candidateRef = "current"): Promise<WorkflowDeployment> {
+  return postJSON<WorkflowDeployment>("/v1/workflows/deploy", { runId, candidateRef, dryRun: false, confirm: true });
+}
+
+export function getIntegrityPackArtifact(runId: string): Promise<unknown> {
+  return getJSON<unknown>(`/v1/verifications/${encodeURIComponent(runId)}/pack`);
 }
 
 export function getDashboard(): Promise<DashboardSnapshot> {

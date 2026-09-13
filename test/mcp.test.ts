@@ -38,7 +38,19 @@ test("MCP server exposes lute tools", { timeout: 60000 }, async () => {
   await withClient(async (client) => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    assert.deepEqual(names, ["lute_audit", "lute_explain", "lute_supported_events"]);
+    assert.deepEqual(names, [
+      "lute_audit",
+      "lute_build",
+      "lute_builds",
+      "lute_deploy",
+      "lute_deployment_gate",
+      "lute_explain",
+      "lute_integrity_pack",
+      "lute_monitor",
+      "lute_repair",
+      "lute_supported_events",
+      "lute_verify",
+    ]);
   });
 });
 

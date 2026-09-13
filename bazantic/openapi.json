@@ -85,6 +85,59 @@
     "/v1/integrity-packs/erc4626@1": {
       "get": { "operationId": "getErc4626Pack", "summary": "Get the ERC-4626 Integrity Pack", "responses": { "200": { "description": "ERC-4626 pack" } } }
     },
+    "/v1/workflows/builds": {
+      "get": {
+        "operationId": "listWorkflowBuilds",
+        "summary": "List recent Lute builds",
+        "description": "Lists opaque build ids and deterministic candidate hashes. No filesystem path or secret is accepted from the caller.",
+        "responses": { "200": { "description": "Recent builds" } }
+      }
+    },
+    "/v1/workflows/build": {
+      "post": {
+        "operationId": "buildCandidate",
+        "summary": "Build a deterministic ERC-4626 candidate",
+        "description": "Scaffolds a Base ERC-4626 candidate from Lute's reviewed template. Compilation is opt-in. Build does not verify or deploy.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowBuildRequest" } } } },
+        "responses": { "201": { "description": "Build completed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowBuild" } } } }, "400": { "description": "Invalid build request" } }
+      }
+    },
+    "/v1/workflows/verify": {
+      "post": {
+        "operationId": "verifyCandidate",
+        "summary": "Verify and persist a candidate",
+        "description": "Runs the unchanged raw-chain-versus-index verifier and binds the result to the candidate hash. candidateRef is current or a build id returned by the build endpoint.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowVerifyRequest" } } } },
+        "responses": { "201": { "description": "VerificationRun persisted", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowVerification" } } } }, "400": { "description": "Invalid verification request" } }
+      }
+    },
+    "/v1/workflows/repair": {
+      "post": {
+        "operationId": "repairCandidate",
+        "summary": "Diagnose or explicitly apply a known repair",
+        "description": "Returns an evidence-backed RepairContext. Applying the narrow known repair requires applyKnownFix=true and always requires a new verification.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowRepairRequest" } } } },
+        "responses": { "200": { "description": "Repair context or applied repair" }, "409": { "description": "Repair/deployment precondition failed" } }
+      }
+    },
+    "/v1/workflows/gate": {
+      "post": {
+        "operationId": "evaluateDeploymentGate",
+        "summary": "Evaluate the fail-closed deployment gate",
+        "description": "Compares the exact candidate hash with a persisted verified run. This endpoint never deploys.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowGateRequest" } } } },
+        "responses": { "200": { "description": "Gate decision" }, "404": { "description": "Run or build not found" } }
+      }
+    },
+    "/v1/workflows/deploy": {
+      "post": {
+        "operationId": "deployVerifiedCandidate",
+        "summary": "Preview or deploy a verified candidate",
+        "description": "dryRun defaults to true. An external deployment requires dryRun=false, confirm=true, and server-side LUTE_ENABLE_DEPLOYMENT=true. The endpoint never accepts private keys.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WorkflowDeployRequest" } } } },
+        "responses": { "200": { "description": "Deployment plan or receipt" }, "409": { "description": "Confirmation or server deployment policy required" } }
+      }
+    },
     "/api/audit": {
       "post": {
         "operationId": "auditVault",
@@ -214,6 +267,63 @@
           "candidate": { "type": "object", "description": "Candidate hash and deterministic file manifest" },
           "evidence": { "type": "object", "description": "Evidence root and stable block/source/check lineage ids" },
           "payment": { "type": "object", "description": "Public x402 settlement metadata; never contains signing material" }
+        }
+      },
+      "WorkflowBuildRequest": {
+        "type": "object",
+        "required": ["intent", "startBlock"],
+        "properties": {
+          "intent": { "type": "string", "minLength": 8, "maxLength": 2000 },
+          "contract": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+          "startBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }] },
+          "compile": { "type": "boolean", "default": false }
+        }
+      },
+      "WorkflowBuild": {
+        "type": "object",
+        "required": ["schemaVersion", "buildId", "createdAt", "result"],
+        "properties": { "schemaVersion": { "const": 1 }, "buildId": { "type": "string" }, "createdAt": { "type": "string", "format": "date-time" }, "result": { "type": "object", "description": "Build result with candidate hash and stages" } }
+      },
+      "WorkflowVerifyRequest": {
+        "type": "object",
+        "required": ["contract", "fromBlock", "toBlock"],
+        "properties": {
+          "contract": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+          "event": { "type": "string", "enum": ["Deposit", "Withdraw"], "default": "Deposit" },
+          "fromBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }] },
+          "toBlock": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }] },
+          "subgraph": { "type": "string", "default": "morpho" },
+          "candidateRef": { "type": "string", "default": "current", "description": "current or an opaque build id" },
+          "minConfirmations": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "string", "pattern": "^[0-9]+$" }] }
+        }
+      },
+      "WorkflowVerification": {
+        "type": "object",
+        "required": ["run", "file", "candidateRef"],
+        "properties": { "run": { "$ref": "#/components/schemas/VerificationRun" }, "file": { "type": "string" }, "candidateRef": { "type": "string" } }
+      },
+      "WorkflowRepairRequest": {
+        "type": "object",
+        "required": ["runId"],
+        "properties": { "runId": { "type": "string" }, "candidateRef": { "type": "string", "default": "current" }, "applyKnownFix": { "type": "boolean", "default": false } }
+      },
+      "WorkflowGateRequest": {
+        "type": "object",
+        "required": ["runId"],
+        "properties": { "runId": { "type": "string" }, "candidateRef": { "type": "string", "default": "current" } }
+      },
+      "WorkflowDeployRequest": {
+        "type": "object",
+        "required": ["runId"],
+        "properties": {
+          "runId": { "type": "string" },
+          "candidateRef": { "type": "string", "default": "current" },
+          "dryRun": { "type": "boolean", "default": true },
+          "confirm": { "type": "boolean", "default": false },
+          "name": { "type": "string" },
+          "node": { "type": "string", "format": "uri" },
+          "ipfs": { "type": "string", "format": "uri" },
+          "versionLabel": { "type": "string" }
         }
       }
     },

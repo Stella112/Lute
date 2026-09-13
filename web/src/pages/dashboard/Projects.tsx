@@ -1,0 +1,95 @@
+import { useState } from "react";
+import { Boxes, CheckCircle2, FileCode2, Loader2, Play, ShieldCheck, Wrench } from "lucide-react";
+import { Badge, Button, StatusBadge } from "../../components/ui";
+import { buildProject, runVerification } from "../../lib/api";
+import type { WorkflowBuild, WorkflowVerification } from "../../lib/types";
+
+type State = "idle" | "running" | "done" | "error";
+
+const DEFAULT_CONTRACT = "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183";
+
+export function Projects() {
+  const [intent, setIntent] = useState(`Build an ERC-4626 indexer on Base for ${DEFAULT_CONTRACT}`);
+  const [contract, setContract] = useState(DEFAULT_CONTRACT);
+  const [startBlock, setStartBlock] = useState("51115000");
+  const [compile, setCompile] = useState(false);
+  const [buildState, setBuildState] = useState<State>("idle");
+  const [verifyState, setVerifyState] = useState<State>("idle");
+  const [build, setBuild] = useState<WorkflowBuild | null>(null);
+  const [verification, setVerification] = useState<WorkflowVerification | null>(null);
+  const [event, setEvent] = useState<"Deposit" | "Withdraw">("Deposit");
+  const [fromBlock, setFromBlock] = useState("51115000");
+  const [toBlock, setToBlock] = useState("51125000");
+  const [subgraph, setSubgraph] = useState("morpho");
+  const [error, setError] = useState("");
+
+  const buildCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBuildState("running"); setError(""); setBuild(null); setVerification(null);
+    try {
+      const result = await buildProject({ intent, contract: contract.trim(), startBlock: startBlock.trim(), compile });
+      setBuild(result); setBuildState("done");
+    } catch (err) {
+      setError((err as Error).message); setBuildState("error");
+    }
+  };
+
+  const verifyCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVerifyState("running"); setError(""); setVerification(null);
+    try {
+      const result = await runVerification({
+        contract: contract.trim(), event, fromBlock: fromBlock.trim(), toBlock: toBlock.trim(), subgraph,
+        candidateRef: build?.buildId ?? "current",
+      });
+      setVerification(result); setVerifyState("done");
+    } catch (err) {
+      setError((err as Error).message); setVerifyState("error");
+    }
+  };
+
+  return <>
+    <div className="dash-head">
+      <div><h1>Build &amp; Ship</h1><p>Use the same verified engine from the dashboard: build a candidate, verify it, repair only with evidence, then pass the deployment gate.</p></div>
+      <Badge tone="accent">ERC-4626 · Base</Badge>
+    </div>
+
+    <div className="panel" style={{ marginBottom: "var(--sp-4)" }}>
+      <div className="panel__h"><h2><Boxes size={18} /> How Lute works</h2><Badge tone="success">Fail-closed</Badge></div>
+      <div className="g3">
+        <div><strong>1. Build</strong><p className="muted">Scaffold the reviewed template and record an exact candidate hash.</p></div>
+        <div><strong>2. Verify</strong><p className="muted">Compare raw Base logs with the index and persist the evidence-backed run.</p></div>
+        <div><strong>3. Ship</strong><p className="muted">Repair with proof, re-verify, preview the plan, and deploy only the matching hash.</p></div>
+      </div>
+    </div>
+
+    <div className="g2 stack">
+      <div className="panel">
+        <div className="panel__h"><h2><FileCode2 size={18} /> 1 · Build candidate</h2><Badge tone={buildState === "done" ? "success" : "info"}>{buildState === "running" ? "Building…" : buildState === "done" ? "Ready" : "Explicit"}</Badge></div>
+        <form className="audit-form" onSubmit={buildCandidate}>
+          <div className="field full"><label>Build intent</label><input value={intent} onChange={(e) => setIntent(e.target.value)} /></div>
+          <div className="field full"><label>Vault contract</label><input value={contract} onChange={(e) => setContract(e.target.value)} spellCheck={false} /></div>
+          <div className="field"><label>Start block</label><input value={startBlock} onChange={(e) => setStartBlock(e.target.value)} /></div>
+          <label className="field" style={{ display: "flex", gap: 10, alignItems: "center", paddingTop: 22 }}><input type="checkbox" checked={compile} onChange={(e) => setCompile(e.target.checked)} style={{ width: "auto" }} /><span>Run Graph codegen/build</span></label>
+          <div className="field full"><Button type="submit" disabled={buildState === "running"}>{buildState === "running" ? <><Loader2 size={15} className="spin" /> Building…</> : <><FileCode2 size={15} /> Build candidate</>}</Button><div className="hint">Compilation is optional and off by default. Build does not verify or deploy.</div></div>
+        </form>
+        {build && <div style={{ marginTop: "var(--sp-4)" }}><div className="kvrow"><span>Build id</span><span className="mono">{build.buildId}</span></div><div className="kvrow"><span>Candidate hash</span><span className="mono">{build.result.candidate.candidateHash}</span></div><div className="kvrow"><span>Files</span><span>{build.result.candidate.fileCount}</span></div><div className="dcode" style={{ marginTop: "var(--sp-3)" }}>{build.result.stages.map((stage) => <div key={stage.name}><span className="ln">{stage.status}</span>{stage.name}: {stage.detail}</div>)}</div></div>}
+      </div>
+
+      <div className="panel">
+        <div className="panel__h"><h2><ShieldCheck size={18} /> 2 · Verify candidate</h2><Badge tone={verification?.run.verdict === "VERIFIED" ? "success" : "info"}>{verifyState === "running" ? "Verifying…" : verification?.run.verdict ?? "Required"}</Badge></div>
+        <form className="audit-form" onSubmit={verifyCandidate}>
+          <div className="field"><label>Event</label><select value={event} onChange={(e) => setEvent(e.target.value as "Deposit" | "Withdraw")}><option>Deposit</option><option>Withdraw</option></select></div>
+          <div className="field"><label>Index source</label><select value={subgraph} onChange={(e) => setSubgraph(e.target.value)}><option value="morpho">Morpho — public index</option><option value="graphnode:lute/steak-honest">Graph Node — honest</option><option value="graphnode:lute/steak-bugged">Graph Node — bugged</option><option value="local:block-id">Local — planted bug</option></select></div>
+          <div className="field"><label>From block</label><input value={fromBlock} onChange={(e) => setFromBlock(e.target.value)} /></div>
+          <div className="field"><label>To block</label><input value={toBlock} onChange={(e) => setToBlock(e.target.value)} /></div>
+          <div className="field full"><Button type="submit" disabled={verifyState === "running"}>{verifyState === "running" ? <><Loader2 size={15} className="spin" /> Running verifier…</> : <><Play size={15} /> Verify and save run</>}</Button><div className="hint">Candidate: <span className="mono">{build?.buildId ?? "current"}</span>. A new persisted run is created every time.</div></div>
+        </form>
+        {verification && <div style={{ marginTop: "var(--sp-4)" }}><div className="audit-result__verdict"><StatusBadge status={verification.run.verdict} /><span className="muted">{verification.run.report.eventsChecked} events checked · run <span className="mono">{verification.run.runId}</span></span></div><div className="kvrow"><span>Evidence root</span><span className="mono">{verification.run.evidenceRoot}</span></div><div className="kvrow"><span>Next</span><span className="muted">Review the run, repair only if FAILED, then preview the Deployment Gate.</span></div></div>}
+      </div>
+    </div>
+
+    {error && <div className="panel" style={{ borderColor: "var(--danger)" }}><div className="empty"><Wrench size={24} /><h2>Workflow action failed</h2><p>{error}</p></div></div>}
+    <div className="panel"><div className="panel__h"><h2><CheckCircle2 size={18} /> 3 · Gate and deploy</h2><Badge tone="neutral">Separate operator action</Badge></div><p className="muted">Open Deployments after verification. Lute will recalculate the exact candidate hash, show the fail-closed gate, and provide a dry-run Graph plan. An external deploy requires explicit confirmation and server authorization.</p></div>
+  </>;
+}

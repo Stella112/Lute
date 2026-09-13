@@ -22,6 +22,15 @@ import { listIncidents, loadIncident } from "./incidents.js";
 import { listMonitoringRuns, loadMonitoringTargets, runMonitoring, type MonitoringRun } from "./monitoring.js";
 import { GraphProviderError, queryGraphStudio } from "./graph-provider.js";
 import { createIntegrityPackArtifact, loadErc4626Pack } from "./integrity-pack.js";
+import {
+  buildWorkflow,
+  deployWorkflow,
+  gateWorkflow,
+  listWorkflowBuilds,
+  repairWorkflow,
+  verifyWorkflow,
+  WorkflowError,
+} from "./control-plane.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = join(__dirname, "..");
@@ -90,6 +99,19 @@ function parseBody(raw: string): AuditBody {
     throw new RequestError(400, "request body must be a JSON object");
   }
   return parsed as AuditBody;
+}
+
+function parseWorkflowBody(raw: string): Record<string, unknown> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw || "{}");
+  } catch {
+    throw new RequestError(400, "request body must be valid JSON");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new RequestError(400, "request body must be a JSON object");
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function queryBody(url: URL): AuditBody | null {
@@ -311,6 +333,61 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/v1/dashboard") return send(res, 200, dashboardSnapshot());
     if (req.method === "GET" && url.pathname === "/v1/deployment-gate") return send(res, 200, { gate: deploymentGateFor(listVerificationRuns()[0] ?? null) });
     if (req.method === "GET" && url.pathname === "/v1/incidents") return send(res, 200, { incidents: listIncidents() });
+    if (req.method === "GET" && url.pathname === "/v1/workflows/builds") return send(res, 200, { builds: listWorkflowBuilds() });
+
+    if (req.method === "POST" && url.pathname === "/v1/workflows/build") {
+      const body = parseWorkflowBody(await readBody(req));
+      const build = await buildWorkflow({
+        intent: body.intent as string,
+        contract: body.contract as string | undefined,
+        startBlock: body.startBlock as string | number,
+        compile: body.compile as boolean | undefined,
+      });
+      return send(res, 201, build);
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/workflows/verify") {
+      const body = parseWorkflowBody(await readBody(req));
+      const result = await verifyWorkflow({
+        contract: body.contract as string,
+        event: body.event as "Deposit" | "Withdraw" | undefined,
+        fromBlock: body.fromBlock as string | number,
+        toBlock: body.toBlock as string | number,
+        subgraph: body.subgraph as string | undefined,
+        candidateRef: (body.candidateRef ?? body.candidate) as string | undefined,
+        minConfirmations: body.minConfirmations as string | number | undefined,
+      });
+      return send(res, 201, result);
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/workflows/repair") {
+      const body = parseWorkflowBody(await readBody(req));
+      if (typeof body.runId !== "string") throw new RequestError(400, "runId is required");
+      const result = repairWorkflow(body.runId, (body.candidateRef ?? body.candidate) as string | undefined, body.applyKnownFix === true);
+      return send(res, 200, result);
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/workflows/gate") {
+      const body = parseWorkflowBody(await readBody(req));
+      if (typeof body.runId !== "string") throw new RequestError(400, "runId is required");
+      return send(res, 200, gateWorkflow(body.runId, (body.candidateRef ?? body.candidate) as string | undefined));
+    }
+
+    if (req.method === "POST" && url.pathname === "/v1/workflows/deploy") {
+      const body = parseWorkflowBody(await readBody(req));
+      if (typeof body.runId !== "string") throw new RequestError(400, "runId is required");
+      const result = await deployWorkflow({
+        runId: body.runId,
+        candidateRef: (body.candidateRef ?? body.candidate) as string | undefined,
+        dryRun: body.dryRun as boolean | undefined,
+        confirm: body.confirm as boolean | undefined,
+        name: body.name as string | undefined,
+        node: body.node as string | undefined,
+        ipfs: body.ipfs as string | undefined,
+        versionLabel: body.versionLabel as string | undefined,
+      });
+      return send(res, 200, result);
+    }
 
     const incidentMatch = url.pathname.match(/^\/v1\/incidents\/([^/]+)$/);
     if (req.method === "GET" && incidentMatch) {
@@ -356,6 +433,7 @@ const server = createServer(async (req, res) => {
     return send(res, 404, { error: "not found" });
   } catch (error) {
     if (error instanceof RequestError) return send(res, error.status, { error: error.message });
+    if (error instanceof WorkflowError) return send(res, error.status, { error: error.message });
     if (error instanceof GraphProviderError) return send(res, error.status, { error: error.message });
     if (error instanceof Error && /verification run not found|invalid VerificationRun file/.test(error.message)) return send(res, 404, { error: error.message });
     return send(res, 500, { error: error instanceof Error ? error.message : String(error) });
