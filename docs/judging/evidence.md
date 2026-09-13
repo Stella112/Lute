@@ -39,8 +39,8 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
 
 ## Bazantic
 
-- Active gateway URL: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com`
-- MCP endpoint: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp`
+- Active Lute audit gateway URL: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com`
+- Active Lute audit MCP endpoint: `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp`
 - Gateway status: `active`; public MCP `tools/list` and read-only `info` call verified
 - Gateway operations: generated from `https://uselute.xyz/openapi.json`; the current
   audit tools expose query-shaped top-level MCP arguments (`contract`, `fromBlock`,
@@ -52,9 +52,17 @@ Replace each `NOT RECORDED` entry only after reproducing the corresponding live 
   after its payment challenge. The replacement gateway was created with the corrected
   query-shaped MCP schema; see `docs/judging/bazantic-support-report.md` for the
   sanitized reproduction against the old gateway.
-- Verify Before Trust Recipe: `NOT RECORDED`
+- Active Graph provider gateway URL: `https://ssr3i3ifazfv3llppiubwpuxqe.bazgateway.com`
+- Active Graph provider MCP endpoint: `https://ssr3i3ifazfv3llppiubwpuxqe.bazgateway.com/mcp`
+- Graph provider gateway status: `active`; public MCP `tools/list` verified
+- Graph provider upstream: `https://api.studio.thegraph.com/query/1760216/lute/v0.1.1`
+- Free two-service backend flow: Graph Studio returned `75` indexed events and the
+  Lute audit of `subgraph=graphstudio` returned `VERIFIED` with `75` raw and indexed
+  events; run `e1ef6faf-d08a-44f6-bc4e-75c7f8fb459f`.
+- Verify Before Trust Recipe: `verify-before-trust-graph-lute` — `published`; it binds
+  `queryGraphEvents` and `auditVault`.
 - Bazantic account username: `NOT RECORDED`
-- Other sponsor service used by the Recipe: `NOT RECORDED`
+- Other sponsor service used by the Recipe: The Graph Subgraph Studio
 
 ## Media and submission
 

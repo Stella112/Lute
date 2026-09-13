@@ -48,8 +48,12 @@ Requirements:
 - A **Recipe** using both in one working flow. Screen recording. Bazantic username in submission.
 
 How Lute satisfies it:
-- Bazantic artifacts currently describe the audit API in `bazantic/openapi.json`; the live Gateway and Verify-Before-Trust Recipe are still pending and the spec should be aligned before submission.
-- **"Verify Before Trust" Recipe**: a Graph sponsor service resolves/queries a data source → Lute audits it → policy gate. Outcome depends on both The Graph and Lute.
+- The Lute audit gateway and a separate Graph provider gateway are live in Bazantic,
+  with query-shaped contracts that avoid JSON-body forwarding failures.
+- **"Verify Before Trust" Recipe** (`verify-before-trust-graph-lute`): the Graph sponsor
+  service queries the deployed Graph Studio subgraph → Lute audits the same candidate
+  against raw Base RPC → the Recipe applies a conservative policy gate. A free live
+  backend run returned 75 Graph events and a `VERIFIED` 75/75 Lute result.
 
 ### Agentify a New API ($1,000) — possible secondary
 - Add a service not previously on Bazantic/sponsors; working Gateway; recipe; screen recording. (Lute itself is the new API.)

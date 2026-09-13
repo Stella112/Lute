@@ -23,10 +23,10 @@ Lute report returned after payment. Record the transaction in `docs/judging/evid
 
 ### Bazantic
 
-Use the live gateway and Recipe only after the upstream is public over HTTPS. Show a
-Graph discovery/query result flowing into Lute's audit, then show the Recipe stopping on
-`FAILED` and continuing on `VERIFIED`. Record the gateway URL, Recipe, and account name
-in `docs/judging/evidence.md`.
+Use the published `verify-before-trust-graph-lute` Recipe. Show a Graph Studio
+discovery/query result flowing into Lute's independent audit, then show the Recipe
+stopping on `FAILED` and continuing on `VERIFIED`. Record the gateway URLs, Recipe
+handle, and account name in `docs/judging/evidence.md`.
 
 ## Claims discipline
 

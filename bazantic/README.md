@@ -7,6 +7,10 @@ upstream with **x402 / MPP** payments and exposes each OpenAPI operation as a ca
 Files here:
 - [`openapi.json`](openapi.json) — the audit API spec Bazantic turns into MCP recipes
   (`auditVault`, `listSupportedEvents`). Points at Lute's `src/server.ts` endpoints.
+- [`graph-openapi.json`](graph-openapi.json) — the read-only Graph Studio adapter spec
+  used by the Verify Before Trust Recipe.
+- [`verify-before-trust.recipe.json`](verify-before-trust.recipe.json) — the published
+  two-service Recipe definition.
 - [`bazantic.yaml`](bazantic.yaml) — the gateway manifest (preview schema v1).
 
 ## Prerequisites (yours)
@@ -40,6 +44,9 @@ The deployed Lute URL is `https://uselute.xyz`. Values mirror
 [`bazantic.yaml`](bazantic.yaml) (the manifest path is preview and not yet accepted by the
 released CLI, per Bazantic's docs — use `baz gateway add` for now).
 
+The current published Recipe handle is `verify-before-trust-graph-lute`. It calls the
+Graph provider gateway first, then the Lute audit gateway with `subgraph=graphstudio`.
+
 ## Consume it
 
 ```bash
@@ -60,10 +67,10 @@ on a proxy preserving a JSON request body. Lute's direct REST endpoints still ac
 the JSON body shown in the judge quickstart. To audit the deployed Graph Studio
 candidate directly, pass `subgraph=graphstudio`.
 
-## What I built vs. what needs you
+## Current state
 
-- Built here: the OpenAPI spec + gateway manifest + these commands — validated as
-  well-formed and matching Lute's real endpoints.
-- Yours: a public HTTPS deployment of the upstream, and `baz login` + `baz gateway add`
-  under your account. Once the gateway is live, paste `baz gateway list --json` and I'll
-  verify the recipes resolve and a `tools/list` returns the audit operation.
+- Built and live: the public Lute upstream, the Lute audit gateway, the Graph provider
+  gateway, and the published Recipe. Free MCP discovery and the free two-service
+  backend flow have been verified.
+- A paid end-to-end call still requires the caller's own Bazantic account, wallet, or
+  approved test credit. Do not commit or share payment credentials.

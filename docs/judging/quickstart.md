@@ -45,11 +45,11 @@ Useful read-only endpoints:
 
 ## 3. Connect through Bazantic MCP
 
-The active Bazantic gateway is:
+The active Bazantic gateways are:
 
 `https://sewytfjysrf5xb4qjhdoyc5uei.bazgateway.com/mcp`
 
-It exposes Lute operations as MCP tools, including `auditVault`,
+This is the Lute audit gateway. It exposes Lute operations as MCP tools, including `auditVault`,
 `auditVaultV1`, `verifyCurrentCandidate`, `getVerification`,
 `getVerificationEvidence`, `getVerifiedManifest`, `listSupportedEvents`,
 `listIntegrityPacks`, and `getErc4626Pack`.
@@ -57,6 +57,15 @@ It exposes Lute operations as MCP tools, including `auditVault`,
 The audit tools accept `contract`, `fromBlock`, and `toBlock` as top-level MCP
 arguments, with optional `event` and `subgraph` arguments. This shape lets the
 Bazantic gateway forward the paid request without depending on a JSON request body.
+
+The Graph provider adapter is available at:
+
+`https://ssr3i3ifazfv3llppiubwpuxqe.bazgateway.com/mcp`
+
+It exposes `queryGraphEvents`, which reads the deployed Graph Studio candidate through
+the public Lute adapter. The published Verify Before Trust Recipe is
+`verify-before-trust-graph-lute`; it calls that Graph tool first and then calls Lute's
+audit tool with `subgraph=graphstudio`.
 
 MCP tool discovery is free. Audit execution through the gateway is pay-per-request,
 so a judge who wants to run a paid gateway call must use their own Bazantic account,
